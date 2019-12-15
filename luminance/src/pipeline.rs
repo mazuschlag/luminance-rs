@@ -95,25 +95,10 @@
 //! A pipeline is just an aggregation of shadings commands with a few extra information. It
 //! especially gives you the power to scope-bind GPU resources.
 
-#[cfg(feature = "std")]
 use std::cell::RefCell;
-#[cfg(feature = "std")]
 use std::marker::PhantomData;
-#[cfg(feature = "std")]
 use std::ops::Deref;
-#[cfg(feature = "std")]
 use std::rc::Rc;
-
-#[cfg(not(feature = "std"))]
-use alloc::rc::Rc;
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
-use core::cell::RefCell;
-#[cfg(not(feature = "std"))]
-use core::marker::PhantomData;
-#[cfg(not(feature = "std"))]
-use core::ops::Deref;
 
 use crate::blending::BlendingState;
 use crate::buffer::{Buffer, RawBuffer};

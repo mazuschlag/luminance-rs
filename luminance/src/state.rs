@@ -1,18 +1,8 @@
 //! Graphics state.
 
-#[cfg(feature = "std")]
 use std::cell::RefCell;
-#[cfg(feature = "std")]
 use std::fmt;
-#[cfg(feature = "std")]
 use std::marker::PhantomData;
-
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
-use core::fmt;
-#[cfg(not(feature = "std"))]
-use core::marker::PhantomData;
 
 use crate::blending::{BlendingState, Equation, Factor};
 use crate::depth_test::{DepthComparison, DepthTest};
@@ -23,7 +13,6 @@ use crate::vertex_restart::VertexRestart;
 // TLS synchronization barrier for `GraphicsState`.
 //
 // Note: disable on no_std.
-#[cfg(feature = "std")]
 thread_local!(static TLS_ACQUIRE_GFX_STATE: RefCell<Option<()>> = RefCell::new(Some(())));
 
 /// The graphics state.
@@ -94,26 +83,18 @@ impl GraphicsState {
   /// > standard library, this function will always return successfully. You have to take extra care
   /// > in this case.
   pub fn new() -> Result<Self, StateQueryError> {
-    #[cfg(feature = "std")]
-    {
-      TLS_ACQUIRE_GFX_STATE.with(|rc| {
-        let mut inner = rc.borrow_mut();
+    TLS_ACQUIRE_GFX_STATE.with(|rc| {
+      let mut inner = rc.borrow_mut();
 
-        match *inner {
-          Some(_) => {
-            inner.take();
-            Self::get_from_context()
-          }
-
-          None => Err(StateQueryError::UnavailableGraphicsState),
+      match *inner {
+        Some(_) => {
+          inner.take();
+          Self::get_from_context()
         }
-      })
-    }
 
-    #[cfg(not(feature = "std"))]
-    {
-      Self::get_from_context()
-    }
+        None => Err(StateQueryError::UnavailableGraphicsState),
+      }
+    })
   }
 
   /// Get a `GraphicsContext` from the current OpenGL context.

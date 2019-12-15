@@ -394,8 +394,6 @@
 //! [luminance-glfw]: https://crates.io/crates/luminance-glfw
 
 #![deny(missing_docs)]
-#![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), feature(alloc))]
 
 pub mod blending;
 pub mod buffer;

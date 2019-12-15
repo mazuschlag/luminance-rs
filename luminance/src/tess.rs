@@ -51,26 +51,12 @@
 //! [`TessSlice`]: crate::tess::TessSlice
 //! [pipeline]: crate::pipeline
 
-#[cfg(feature = "std")]
-use std::fmt;
-#[cfg(feature = "std")]
-use std::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
-#[cfg(feature = "std")]
-use std::os::raw::c_void;
-#[cfg(feature = "std")]
-use std::ptr;
-
 use std::cell::RefCell;
+use std::fmt;
+use std::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
+use std::os::raw::c_void;
+use std::ptr;
 use std::rc::Rc;
-
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
-use core::fmt;
-#[cfg(not(feature = "std"))]
-use core::ops::{Range, RangeFrom, RangeFull, RangeTo};
-#[cfg(not(feature = "std"))]
-use core::ptr;
 
 use crate::buffer::{Buffer, BufferError, BufferSlice, BufferSliceMut, RawBuffer};
 use crate::context::GraphicsContext;

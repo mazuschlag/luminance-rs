@@ -28,19 +28,10 @@
 //!
 //! Color buffers are abstracted by `ColorSlot` and the depth buffer by `DepthSlot`.
 
-#[cfg(feature = "std")]
 use std::cell::RefCell;
 use std::fmt;
-#[cfg(feature = "std")]
 use std::marker::PhantomData;
 use std::rc::Rc;
-
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
-use core::fmt;
-#[cfg(not(feature = "std"))]
-use core::marker::PhantomData;
 
 use crate::context::GraphicsContext;
 use crate::metagl::*;

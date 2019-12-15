@@ -86,47 +86,16 @@
 //! [`GraphicsContext`]: crate::context::GraphicsContext
 //! [`UniformBlock`]: crate::buffer::UniformBlock
 
-#[cfg(feature = "std")]
 use std::cell::RefCell;
-#[cfg(feature = "std")]
 use std::cmp::Ordering;
-#[cfg(feature = "std")]
 use std::fmt;
-#[cfg(feature = "std")]
 use std::marker::PhantomData;
-#[cfg(feature = "std")]
 use std::mem;
-#[cfg(feature = "std")]
 use std::ops::{Deref, DerefMut};
-#[cfg(feature = "std")]
 use std::os::raw::c_void;
-#[cfg(feature = "std")]
 use std::ptr;
-#[cfg(feature = "std")]
 use std::rc::Rc;
-#[cfg(feature = "std")]
 use std::slice;
-
-#[cfg(not(feature = "std"))]
-use alloc::rc::Rc;
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
-use core::cell::RefCell;
-#[cfg(not(feature = "std"))]
-use core::cmp::Ordering;
-#[cfg(not(feature = "std"))]
-use core::fmt;
-#[cfg(not(feature = "std"))]
-use core::marker::PhantomData;
-#[cfg(not(feature = "std"))]
-use core::mem;
-#[cfg(not(feature = "std"))]
-use core::ops::{Deref, DerefMut};
-#[cfg(not(feature = "std"))]
-use core::ptr;
-#[cfg(not(feature = "std"))]
-use core::slice;
 
 use crate::context::GraphicsContext;
 use crate::linear::{M22, M33, M44};
