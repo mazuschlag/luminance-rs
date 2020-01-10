@@ -3,9 +3,9 @@
 use std::marker::PhantomData;
 
 use crate::backend::shader::{
-  ProgramError, ProgramWarning, Shader, Uniform, UniformWarning, Uniformable,
+  ProgramError, ProgramWarning, Shader, StageError, StageType, TessellationStages, Uniform,
+  UniformWarning, Uniformable,
 };
-use crate::backend::shader_stage::{StageError, StageType, TessellationStages};
 use crate::context::GraphicsContext;
 use crate::vertex::Semantics;
 
