@@ -138,6 +138,10 @@ impl<S, Sem, Out, Uni> AdaptationFailure<S, Sem, Out, Uni>
 where
   S: Shader,
 {
+  pub(crate) fn new(program: Program<S, Sem, Out, Uni>, error: ProgramError) -> Self {
+    AdaptationFailure { program, error }
+  }
+
   /// Get the program and ignore the error.
   pub fn ignore_error(self) -> Program<S, Sem, Out, Uni> {
     self.program
@@ -168,19 +172,19 @@ where
   S: Shader,
   Sem: Semantics,
 {
-  pub fn from_stages_env<C, T, G, E>(
+  pub fn from_stages_env<'a, C, T, G, E>(
     ctx: &mut C,
-    vertex: &Stage<S>,
+    vertex: &'a Stage<S>,
     tess: T,
     geometry: G,
-    fragment: &Stage<S>,
+    fragment: &'a Stage<S>,
     env: &mut E,
   ) -> Result<BuiltProgram<S, Sem, Out, Uni>, ProgramError>
   where
     C: GraphicsContext<Backend = S>,
     Uni: UniformInterface<E>,
-    T: for<'a> Into<Option<TessellationStages<'a, Stage<S>>>>,
-    G: for<'a> Into<Option<&'a Stage<S>>>,
+    T: Into<Option<TessellationStages<'a, Stage<S>>>>,
+    G: Into<Option<&'a Stage<S>>>,
   {
     let tess = tess.into();
     let geometry = geometry.into();
@@ -198,7 +202,7 @@ where
 
       let warnings = S::apply_semantics::<Sem>(&mut repr)?
         .into_iter()
-        .map(|w| ProgramError::Warning(ProgramWarning::VertexAttrib(w)))
+        .map(|w| ProgramError::Warning(w.into()))
         .collect();
 
       let mut uniform_builder: UniformBuilder<S> =
@@ -207,8 +211,9 @@ where
           warnings: Vec::new(),
           _a: PhantomData,
         })?;
-      let uni = Uni::uniform_interface(&mut uniform_builder, env)
-        .map_err(|w| ProgramError::Warning(ProgramWarning::Uniform(w)))?;
+
+      let uni =
+        Uni::uniform_interface(&mut uniform_builder, env).map_err(ProgramWarning::Uniform)?;
 
       let program = Program {
         repr,
@@ -219,5 +224,129 @@ where
 
       Ok(BuiltProgram { program, warnings })
     }
+  }
+
+  pub fn from_stages<C, T, G>(
+    ctx: &mut C,
+    vertex: &Stage<S>,
+    tess: T,
+    geometry: G,
+    fragment: &Stage<S>,
+  ) -> Result<BuiltProgram<S, Sem, Out, Uni>, ProgramError>
+  where
+    C: GraphicsContext<Backend = S>,
+    Uni: UniformInterface,
+    T: for<'a> Into<Option<TessellationStages<'a, Stage<S>>>>,
+    G: for<'a> Into<Option<&'a Stage<S>>>,
+  {
+    Self::from_stages_env(ctx, vertex, tess, geometry, fragment, &mut ())
+  }
+
+  pub fn from_strings_env<'a, C, V, T, G, F, E>(
+    ctx: &mut C,
+    vertex: V,
+    tess: T,
+    geometry: G,
+    fragment: F,
+    env: &mut E,
+  ) -> Result<BuiltProgram<S, Sem, Out, Uni>, ProgramError>
+  where
+    C: GraphicsContext<Backend = S>,
+    Uni: UniformInterface<E>,
+    V: AsRef<str> + 'a,
+    T: Into<Option<TessellationStages<'a, str>>>,
+    G: Into<Option<&'a str>>,
+    F: AsRef<str> + 'a,
+  {
+    let vs_stage = Stage::new(ctx, StageType::VertexShader, vertex)?;
+
+    let tess_stages = match tess.into() {
+      Some(TessellationStages {
+        control,
+        evaluation,
+      }) => {
+        let control_stage = Stage::new(ctx, StageType::TessellationControlShader, control)?;
+        let evaluation_stage =
+          Stage::new(ctx, StageType::TessellationEvaluationShader, evaluation)?;
+        Some((control_stage, evaluation_stage))
+      }
+      None => None,
+    };
+    let tess_stages =
+      tess_stages
+        .as_ref()
+        .map(|(ref control, ref evaluation)| TessellationStages {
+          control,
+          evaluation,
+        });
+
+    let gs_stage = match geometry.into() {
+      Some(geometry) => Some(Stage::new(ctx, StageType::GeometryShader, geometry)?),
+      None => None,
+    };
+
+    let fs_stage = Stage::new(ctx, StageType::FragmentShader, fragment)?;
+
+    Self::from_stages_env(
+      ctx,
+      &vs_stage,
+      tess_stages,
+      gs_stage.as_ref(),
+      &fs_stage,
+      env,
+    )
+  }
+
+  pub fn from_strings<'a, C, V, T, G, F>(
+    ctx: &mut C,
+    vertex: V,
+    tess: T,
+    geometry: G,
+    fragment: F,
+  ) -> Result<BuiltProgram<S, Sem, Out, Uni>, ProgramError>
+  where
+    C: GraphicsContext<Backend = S>,
+    Uni: UniformInterface,
+    V: AsRef<str> + 'a,
+    T: Into<Option<TessellationStages<'a, str>>>,
+    G: Into<Option<&'a str>>,
+    F: AsRef<str> + 'a,
+  {
+    Self::from_strings_env(ctx, vertex, tess, geometry, fragment, &mut ())
+  }
+
+  pub fn adapt_env<Q, E>(
+    mut self,
+    env: &mut E,
+  ) -> Result<BuiltProgram<S, Sem, Out, Q>, AdaptationFailure<S, Sem, Out, Uni>>
+  where
+    Q: UniformInterface<E>,
+  {
+    // first, try to create the new uniform interface
+    let mut uniform_builder: UniformBuilder<S> = S::new_uniform_builder(&mut self.repr)
+      .map(|repr| UniformBuilder {
+        repr,
+        warnings: Vec::new(),
+        _a: PhantomData,
+      })
+      .map_err(|e| AdaptationFailure::new(self, e))?;
+
+    let uni = Q::uniform_interface(&mut uniform_builder, env)
+      .map_err(|e| AdaptationFailure::new(self, ProgramWarning::Uniform(e).into()))?;
+
+    let warnings = uniform_builder
+      .warnings
+      .into_iter()
+      .map(|w| ProgramError::Warning(w.into()))
+      .collect();
+
+    let program = Program {
+      repr: self.repr,
+      uni,
+      _sem: PhantomData,
+      _out: PhantomData,
+    };
+
+    Ok(BuiltProgram { program, warnings })
   }
 }
