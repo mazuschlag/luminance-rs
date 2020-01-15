@@ -1,6 +1,7 @@
 //! Shader API.
 
 use std::marker::PhantomData;
+use std::ops::Deref;
 
 use crate::backend::shader::{
   ProgramError, ProgramWarning, Shader, StageError, StageType, TessellationStages, Uniform,
@@ -145,6 +146,40 @@ where
   /// Get the program and ignore the error.
   pub fn ignore_error(self) -> Program<S, Sem, Out, Uni> {
     self.program
+  }
+}
+
+pub struct ProgramInterface<'a, S, Uni>
+where
+  S: Shader,
+{
+  program: &'a mut S::ProgramRepr,
+  uniform_interface: &'a Uni,
+}
+
+impl<'a, S, Uni> Deref for ProgramInterface<'a, S, Uni>
+where
+  S: Shader,
+{
+  type Target = Uni;
+
+  fn deref(&self) -> &Self::Target {
+    self.uniform_interface
+  }
+}
+
+impl<'a, S, Uni> ProgramInterface<'a, S, Uni>
+where
+  S: Shader,
+{
+  pub fn query(&'a mut self) -> Result<UniformBuilder<'a, S>, ProgramError> {
+    unsafe {
+      S::new_uniform_builder(&mut self.program).map(|repr| UniformBuilder {
+        repr,
+        warnings: Vec::new(),
+        _a: PhantomData,
+      })
+    }
   }
 }
 
@@ -313,6 +348,15 @@ where
     F: AsRef<str> + 'a,
   {
     Self::from_strings_env(ctx, vertex, tess, geometry, fragment, &mut ())
+  }
+
+  pub fn adapt<Q>(
+    mut self,
+  ) -> Result<BuiltProgram<S, Sem, Out, Q>, AdaptationFailure<S, Sem, Out, Uni>>
+  where
+    Q: UniformInterface,
+  {
+    self.adapt_env(&mut ())
   }
 
   pub fn adapt_env<Q, E>(
