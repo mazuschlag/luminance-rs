@@ -323,16 +323,26 @@ where
     Q: UniformInterface<E>,
   {
     // first, try to create the new uniform interface
-    let mut uniform_builder: UniformBuilder<S> = S::new_uniform_builder(&mut self.repr)
-      .map(|repr| UniformBuilder {
-        repr,
-        warnings: Vec::new(),
-        _a: PhantomData,
-      })
-      .map_err(|e| AdaptationFailure::new(self, e))?;
+    let mut uniform_builder: UniformBuilder<S> =
+      match unsafe { S::new_uniform_builder(&mut self.repr) } {
+        Ok(repr) => UniformBuilder {
+          repr,
+          warnings: Vec::new(),
+          _a: PhantomData,
+        },
 
-    let uni = Q::uniform_interface(&mut uniform_builder, env)
-      .map_err(|e| AdaptationFailure::new(self, ProgramWarning::Uniform(e).into()))?;
+        Err(e) => return Err(AdaptationFailure::new(self, e)),
+      };
+
+    let uni = match Q::uniform_interface(&mut uniform_builder, env) {
+      Ok(uni) => uni,
+      Err(e) => {
+        return Err(AdaptationFailure::new(
+          self,
+          ProgramWarning::Uniform(e).into(),
+        ))
+      }
+    };
 
     let warnings = uniform_builder
       .warnings
@@ -340,13 +350,27 @@ where
       .map(|w| ProgramError::Warning(w.into()))
       .collect();
 
+    // we need to forget self so that we can move-out repr
+    let self_ = std::mem::ManuallyDrop::new(self);
+    let repr = unsafe { std::ptr::read(&self_.repr) };
+
     let program = Program {
-      repr: self.repr,
+      repr,
       uni,
       _sem: PhantomData,
       _out: PhantomData,
     };
 
     Ok(BuiltProgram { program, warnings })
+  }
+
+  pub fn readapt_env<E>(
+    self,
+    env: &mut E,
+  ) -> Result<BuiltProgram<S, Sem, Out, Uni>, AdaptationFailure<S, Sem, Out, Uni>>
+  where
+    Uni: UniformInterface<E>,
+  {
+    self.adapt_env(env)
   }
 }
