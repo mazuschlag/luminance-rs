@@ -28,7 +28,7 @@
 /// Such a context must not be Send nor Sync, which means that you cannot share it between
 /// threads in any way (move / borrow).
 pub unsafe trait GraphicsContext {
-  type Backend;
+  type Backend: ?Sized;
 
   fn backend(&mut self) -> &mut Self::Backend;
 
