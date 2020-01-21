@@ -413,11 +413,16 @@ impl fmt::Display for TextureError {
   }
 }
 
-pub unsafe trait Texture<L, D, P>
+/// The base texture trait.
+///
+/// Backends which implement this trait are able to create and delete texturs and get some common
+/// and basic information on them.
+///
+/// > Note: [`TextureBase`] and [`Texture`] were
+pub unsafe trait TextureBase<L, D>
 where
   D: Dimensionable,
   L: Layerable,
-  P: Pixel,
 {
   type TextureRepr;
 
@@ -433,7 +438,14 @@ where
   unsafe fn mipmaps(texture: &Self::TextureRepr) -> usize;
 
   unsafe fn size(texture: &Self::TextureRepr) -> D::Size;
+}
 
+pub unsafe trait Texture<L, D, P>: TextureBase<L, D>
+where
+  D: Dimensionable,
+  L: Layerable,
+  P: Pixel,
+{
   unsafe fn clear_part(
     texture: &mut Self::TextureRepr,
     gen_mipmaps: GenMipmaps,

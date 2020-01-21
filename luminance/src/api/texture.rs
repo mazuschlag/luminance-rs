@@ -1,5 +1,7 @@
 //! Texture API.
 
+use std::marker::PhantomData;
+
 use crate::backend::texture::{
   Dimensionable, GenMipmaps, Layerable, Sampler, Texture as TextureBackend, TextureError,
 };
@@ -14,6 +16,7 @@ where
   P: Pixel,
 {
   repr: S::TextureRepr,
+  _p: PhantomData<*const P>,
 }
 
 impl<S, L, D, P> Drop for Texture<S, L, D, P>
@@ -48,7 +51,10 @@ where
       ctx
         .backend()
         .new_texture(size, mipmaps, sampler)
-        .map(|repr| Texture { repr })
+        .map(|repr| Texture {
+          repr,
+          _p: PhantomData,
+        })
     }
   }
 
