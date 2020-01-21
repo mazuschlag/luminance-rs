@@ -82,34 +82,35 @@ where
     textures: &mut I,
   ) -> Self::ColorTextures
   where
+    Self: TextureBase<L, D>,
     C: GraphicsContext<Backend = Self>,
     I: Iterator<Item = Self::TextureRepr>;
 }
 
-unsafe impl<L, D, B> ColorSlot<L, D, ()> for B
-where
-  L: Layerable,
-  D: Dimensionable,
-  D::Size: Copy,
-{
-  type ColorTextures = ();
-
-  fn color_formats() -> Vec<PixelFormat> {
-    Vec::new()
-  }
-
-  fn reify_textures<C, I>(
-    ctx: &mut C,
-    size: D::Size,
-    mipmaps: usize,
-    textures: &mut I,
-  ) -> Self::ColorTextures
-  where
-    C: GraphicsContext<Backend = Self>,
-    I: Iterator<Item = Self::TextureRepr>,
-  {
-  }
-}
+//unsafe impl<L, D, B> ColorSlot<L, D, ()> for B
+//where
+//  L: Layerable,
+//  D: Dimensionable,
+//  D::Size: Copy,
+//{
+//  type ColorTextures = ();
+//
+//  fn color_formats() -> Vec<PixelFormat> {
+//    Vec::new()
+//  }
+//
+//  fn reify_textures<C, I>(
+//    ctx: &mut C,
+//    size: D::Size,
+//    mipmaps: usize,
+//    textures: &mut I,
+//  ) -> Self::ColorTextures
+//  where
+//    C: GraphicsContext<Backend = Self>,
+//    I: Iterator<Item = Self::TextureRepr>,
+//  {
+//  }
+//}
 
 //pub unsafe trait Framebuffer<L, D, CS, DS> {
 //}
