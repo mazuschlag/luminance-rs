@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::backend::texture::{Dimensionable, Layerable, Texture, TextureError};
+use crate::backend::texture::{Dimensionable, Layerable, Texture, TextureBase, TextureError};
 use crate::context::GraphicsContext;
 use crate::pixel::{Pixel, PixelFormat};
 
