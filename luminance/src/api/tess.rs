@@ -12,7 +12,7 @@ use crate::vertex::Vertex;
 #[derive(Debug)]
 pub struct TessBuilder<S>
 where
-  S: TessBuilderBackend,
+  S: ?Sized + TessBuilderBackend,
 {
   repr: S::TessBuilderRepr,
 }
@@ -89,14 +89,14 @@ where
 #[derive(Debug)]
 pub struct Tess<S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   repr: S::TessRepr,
 }
 
 impl<S> Drop for Tess<S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   fn drop(&mut self) {
     let _ = unsafe { S::destroy_tess(&mut self.repr) };
@@ -105,7 +105,7 @@ where
 
 impl<S> Tess<S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   pub fn vert_nb(&self) -> usize {
     unsafe { S::tess_vertices_nb(&self.repr) }
@@ -167,14 +167,14 @@ where
 #[derive(Debug)]
 pub struct TessSlice<S, T>
 where
-  S: TessSliceBackend<T>,
+  S: ?Sized + TessSliceBackend<T>,
 {
   repr: S::SliceRepr,
 }
 
 impl<S, T> Drop for TessSlice<S, T>
 where
-  S: TessSliceBackend<T>,
+  S: ?Sized + TessSliceBackend<T>,
 {
   fn drop(&mut self) {
     let _ = unsafe { S::destroy_tess_slice(&mut self.repr) };
@@ -183,7 +183,7 @@ where
 
 impl<S, T> TessSlice<S, T>
 where
-  S: TessSliceBackend<T>,
+  S: ?Sized + TessSliceBackend<T>,
 {
   pub fn as_slice(&self) -> Result<&[T], TessMapError> {
     unsafe { S::obtain_slice(&self.repr) }
@@ -193,14 +193,14 @@ where
 #[derive(Debug)]
 pub struct TessSliceMut<S, T>
 where
-  S: TessSliceBackend<T>,
+  S: ?Sized + TessSliceBackend<T>,
 {
   repr: S::SliceRepr,
 }
 
 impl<S, T> Drop for TessSliceMut<S, T>
 where
-  S: TessSliceBackend<T>,
+  S: ?Sized + TessSliceBackend<T>,
 {
   fn drop(&mut self) {
     let _ = unsafe { S::destroy_tess_slice(&mut self.repr) };
@@ -209,7 +209,7 @@ where
 
 impl<S, T> TessSliceMut<S, T>
 where
-  S: TessSliceBackend<T>,
+  S: ?Sized + TessSliceBackend<T>,
 {
   pub fn as_slice(&self) -> Result<&[T], TessMapError> {
     unsafe { S::obtain_slice(&self.repr) }
@@ -232,7 +232,7 @@ pub enum TessViewError {
 #[derive(Clone)]
 pub struct TessView<'a, S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   /// Tessellation to render.
   tess: &'a Tess<S>,
@@ -246,7 +246,7 @@ where
 
 impl<'a, S> TessView<'a, S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   pub fn one_whole(tess: &'a Tess<S>) -> Self {
     TessView {
@@ -354,7 +354,7 @@ where
 
 impl<'a, S> From<&'a Tess<S>> for TessView<'a, S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   fn from(tess: &'a Tess<S>) -> Self {
     TessView::one_whole(tess)
@@ -363,7 +363,7 @@ where
 
 pub trait SubTess<S, Idx>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   /// Slice a tessellation object and yields a [`TessSlice`] according to the index range.
   fn slice(&self, idx: Idx) -> Result<TessView<S>, TessViewError>;
@@ -375,7 +375,7 @@ where
 
 impl<S> SubTess<S, RangeFull> for Tess<S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   fn slice(&self, _: RangeFull) -> Result<TessView<S>, TessViewError> {
     Ok(TessView::one_whole(self))
@@ -388,7 +388,7 @@ where
 
 impl<S> SubTess<S, RangeTo<usize>> for Tess<S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   fn slice(&self, to: RangeTo<usize>) -> Result<TessView<S>, TessViewError> {
     TessView::one_sub(self, to.end)
@@ -401,7 +401,7 @@ where
 
 impl<S> SubTess<S, RangeFrom<usize>> for Tess<S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   fn slice(&self, from: RangeFrom<usize>) -> Result<TessView<S>, TessViewError> {
     TessView::one_slice(self, from.start, self.vert_nb() - from.start)
@@ -418,7 +418,7 @@ where
 
 impl<S> SubTess<S, Range<usize>> for Tess<S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   fn slice(&self, range: Range<usize>) -> Result<TessView<S>, TessViewError> {
     TessView::one_slice(self, range.start, range.end - range.start)
@@ -431,7 +431,7 @@ where
 
 impl<S> SubTess<S, RangeInclusive<usize>> for Tess<S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   fn slice(&self, range: RangeInclusive<usize>) -> Result<TessView<S>, TessViewError> {
     let start = *range.start();
@@ -452,7 +452,7 @@ where
 
 impl<S> SubTess<S, RangeToInclusive<usize>> for Tess<S>
 where
-  S: TessBackend,
+  S: ?Sized + TessBackend,
 {
   fn slice(&self, to: RangeToInclusive<usize>) -> Result<TessView<S>, TessViewError> {
     TessView::one_sub(self, to.end + 1)
