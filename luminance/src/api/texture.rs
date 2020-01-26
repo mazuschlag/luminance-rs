@@ -10,18 +10,18 @@ use crate::pixel::Pixel;
 
 pub struct Texture<S, L, D, P>
 where
-  S: TextureBackend<L, D, P>,
+  S: ?Sized + TextureBackend<L, D, P>,
   L: Layerable,
   D: Dimensionable,
   P: Pixel,
 {
-  repr: S::TextureRepr,
+  pub(crate) repr: S::TextureRepr,
   _p: PhantomData<*const P>,
 }
 
 impl<S, L, D, P> Drop for Texture<S, L, D, P>
 where
-  S: TextureBackend<L, D, P>,
+  S: ?Sized + TextureBackend<L, D, P>,
   L: Layerable,
   D: Dimensionable,
   P: Pixel,
@@ -33,7 +33,7 @@ where
 
 impl<S, L, D, P> Texture<S, L, D, P>
 where
-  S: TextureBackend<L, D, P>,
+  S: ?Sized + TextureBackend<L, D, P>,
   L: Layerable,
   D: Dimensionable,
   P: Pixel,

@@ -1,13 +1,15 @@
+use crate::backend::framebuffer::{Framebuffer, FramebufferError};
 use crate::backend::texture::{
-  Dimensionable, Layerable, Sampler, Texture as TextureBackend, TextureBase, TextureError,
+  Dimensionable, Layerable, Sampler, Texture as TextureBackend, TextureBase,
 };
 use crate::context::GraphicsContext;
 use crate::pixel::{ColorPixel, Pixel, PixelFormat, RenderablePixel};
 
 use crate::api::texture::Texture;
 
-pub trait ColorSlot<L, D, B>
+pub trait ColorSlot<B, L, D>
 where
+  B: ?Sized + Framebuffer<L, D>,
   L: Layerable,
   D: Dimensionable,
   D::Size: Copy,
@@ -16,19 +18,21 @@ where
 
   fn color_formats() -> Vec<PixelFormat>;
 
-  fn reify_textures<C>(
+  fn reify_color_textures<C>(
     ctx: &mut C,
     size: D::Size,
     mipmaps: usize,
     sampler: &Sampler,
-  ) -> Result<Self::ColorTextures, TextureError>
+    framebuffer: &mut B::FramebufferRepr,
+    attachment_index: usize,
+  ) -> Result<Self::ColorTextures, FramebufferError>
   where
-    B: TextureBase<L, D>,
     C: GraphicsContext<Backend = B>;
 }
 
-impl<L, D, B> ColorSlot<L, D, B> for ()
+impl<B, L, D> ColorSlot<B, L, D> for ()
 where
+  B: ?Sized + Framebuffer<L, D>,
   L: Layerable,
   D: Dimensionable,
   D::Size: Copy,
@@ -39,26 +43,27 @@ where
     Vec::new()
   }
 
-  fn reify_textures<C>(
+  fn reify_color_textures<C>(
     _: &mut C,
     _: D::Size,
     _: usize,
     _: &Sampler,
-  ) -> Result<Self::ColorTextures, TextureError>
+    _: &mut B::FramebufferRepr,
+    _: usize,
+  ) -> Result<Self::ColorTextures, FramebufferError>
   where
-    B: TextureBase<L, D>,
     C: GraphicsContext<Backend = B>,
   {
     Ok(())
   }
 }
 
-impl<L, D, B, P> ColorSlot<L, D, B> for P
+impl<B, L, D, P> ColorSlot<B, L, D> for P
 where
+  B: ?Sized + Framebuffer<L, D> + TextureBackend<L, D, P>,
   L: Layerable,
   D: Dimensionable,
   D::Size: Copy,
-  B: TextureBackend<L, D, P>,
   Self: ColorPixel + RenderablePixel,
 {
   type ColorTextures = Texture<B, L, D, P>;
@@ -67,28 +72,32 @@ where
     vec![P::pixel_format()]
   }
 
-  fn reify_textures<C>(
+  fn reify_color_textures<C>(
     ctx: &mut C,
     size: D::Size,
     mipmaps: usize,
     sampler: &Sampler,
-  ) -> Result<Self::ColorTextures, TextureError>
+    framebuffer: &mut B::FramebufferRepr,
+    attachment_index: usize,
+  ) -> Result<Self::ColorTextures, FramebufferError>
   where
-    B: TextureBase<L, D>,
     C: GraphicsContext<Backend = B>,
   {
-    Texture::new(ctx, size, mipmaps, sampler.clone())
+    let texture = Texture::new(ctx, size, mipmaps, sampler.clone())?;
+    unsafe { B::attach_color_texture(framebuffer, &texture.repr, attachment_index)? };
+
+    Ok(texture)
   }
 }
 
 macro_rules! impl_color_slot_tuple {
   ($($pf:ident),*) => {
-    impl<L, D, B, $($pf),*> ColorSlot<L, D, B> for ($($pf),*)
+    impl<B, L, D, $($pf),*> ColorSlot<B, L, D> for ($($pf),*)
     where
+      B: ?Sized + Framebuffer<L, D> + $(TextureBackend<L, D, $pf> +)*,
       L: Layerable,
       D: Dimensionable,
       D::Size: Copy,
-      B: $(TextureBackend<L, D, $pf> +)*,
       $(
         $pf: ColorPixel + RenderablePixel
       ),*
@@ -99,17 +108,18 @@ macro_rules! impl_color_slot_tuple {
         vec![$($pf::pixel_format()),*]
       }
 
-      fn reify_textures<C>(
+      fn reify_color_textures<C>(
         ctx: &mut C,
         size: D::Size,
         mipmaps: usize,
         sampler: &Sampler,
-      ) -> Result<Self::ColorTextures, TextureError>
+        framebuffer: &mut B::FramebufferRepr,
+        attachment_index: usize,
+      ) -> Result<Self::ColorTextures, FramebufferError>
       where
-        B: TextureBase<L, D>,
         C: GraphicsContext<Backend = B>, {
           Ok(
-            ($(<$pf as ColorSlot<L, D, B>>::reify_textures(ctx, size, mipmaps, sampler)?),*)
+            ($(<$pf as ColorSlot<B, L, D>>::reify_color_textures(ctx, size, mipmaps, sampler, framebuffer, attachment_index + 1)?),*)
           )
       }
     }
