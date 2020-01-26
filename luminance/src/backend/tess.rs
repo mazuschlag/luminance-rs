@@ -224,6 +224,10 @@ pub unsafe trait Tess: TessBuilder {
 
   unsafe fn destroy_tess(tess: &mut Self::TessRepr) -> Result<(), TessError>;
 
+  unsafe fn tess_vertices_nb(tess: &Self::TessRepr) -> usize;
+
+  unsafe fn tess_instances_nb(tess: &Self::TessRepr) -> usize;
+
   unsafe fn render(
     tess: &Self::TessRepr,
     start_index: usize,
