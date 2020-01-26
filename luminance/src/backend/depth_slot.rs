@@ -1,13 +1,15 @@
+use crate::backend::framebuffer::{Framebuffer, FramebufferError};
 use crate::backend::texture::{
-  Dimensionable, Layerable, Sampler, Texture as TextureBackend, TextureBase, TextureError,
+  Dimensionable, Layerable, Sampler, Texture as TextureBackend, TextureBase,
 };
 use crate::context::GraphicsContext;
 use crate::pixel::{DepthPixel, Pixel, PixelFormat};
 
 use crate::api::texture::Texture;
 
-pub trait DepthSlot<L, D, B>
+pub trait DepthSlot<B, L, D>
 where
+  B: ?Sized + Framebuffer<L, D>,
   L: Layerable,
   D: Dimensionable,
   D::Size: Copy,
@@ -19,21 +21,23 @@ where
   fn depth_format() -> Option<PixelFormat>;
 
   /// Reify a raw textures into a depth slot.
-  fn reify_texture<C>(
+  fn reify_depth_texture<C>(
     ctx: &mut C,
     size: D::Size,
     mipmaps: usize,
     sampler: &Sampler,
-  ) -> Result<Self::DepthTexture, TextureError>
+    framebuffer: &mut B::FramebufferRepr,
+  ) -> Result<Self::DepthTexture, FramebufferError>
   where
     C: GraphicsContext<Backend = B>;
 }
 
-impl<L, D, B> DepthSlot<L, D, B> for ()
+impl<B, L, D> DepthSlot<B, L, D> for ()
 where
+  B: ?Sized + Framebuffer<L, D>,
+  D::Size: Copy,
   L: Layerable,
   D: Dimensionable,
-  D::Size: Copy,
 {
   type DepthTexture = ();
 
@@ -41,12 +45,13 @@ where
     None
   }
 
-  fn reify_texture<C>(
+  fn reify_depth_texture<C>(
     _: &mut C,
     _: D::Size,
     _: usize,
     _: &Sampler,
-  ) -> Result<Self::DepthTexture, TextureError>
+    _: &mut B::FramebufferRepr,
+  ) -> Result<Self::DepthTexture, FramebufferError>
   where
     C: GraphicsContext<Backend = B>,
   {
@@ -54,12 +59,12 @@ where
   }
 }
 
-impl<L, D, B, P> DepthSlot<L, D, B> for P
+impl<B, L, D, P> DepthSlot<B, L, D> for P
 where
+  B: ?Sized + Framebuffer<L, D> + TextureBackend<L, D, P>,
   L: Layerable,
   D: Dimensionable,
   D::Size: Copy,
-  B: TextureBackend<L, D, P>,
   P: DepthPixel,
 {
   type DepthTexture = Texture<B, L, D, P>;
@@ -68,15 +73,19 @@ where
     Some(P::pixel_format())
   }
 
-  fn reify_texture<C>(
+  fn reify_depth_texture<C>(
     ctx: &mut C,
     size: D::Size,
     mipmaps: usize,
     sampler: &Sampler,
-  ) -> Result<Self::DepthTexture, TextureError>
+    framebuffer: &mut B::FramebufferRepr,
+  ) -> Result<Self::DepthTexture, FramebufferError>
   where
     C: GraphicsContext<Backend = B>,
   {
-    Texture::new(ctx, size, mipmaps, sampler.clone())
+    let texture = Texture::new(ctx, size, mipmaps, sampler.clone())?;
+    unsafe { B::attach_depth_texture(framebuffer, &texture.repr)? };
+
+    Ok(texture)
   }
 }

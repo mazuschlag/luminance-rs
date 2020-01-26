@@ -2,7 +2,11 @@
 
 use std::fmt;
 
-use crate::backend::texture::{Dimensionable, Layerable, Texture, TextureBase, TextureError};
+use crate::backend::color_slot::ColorSlot;
+use crate::backend::depth_slot::DepthSlot;
+use crate::backend::texture::{
+  Dimensionable, Layerable, Sampler, Texture, TextureBase, TextureError,
+};
 use crate::context::GraphicsContext;
 use crate::pixel::{Pixel, PixelFormat};
 
@@ -26,6 +30,18 @@ impl fmt::Display for FramebufferError {
 
       FramebufferError::Incomplete(ref e) => write!(f, "incomplete framebuffer: {}", e),
     }
+  }
+}
+
+impl From<TextureError> for FramebufferError {
+  fn from(e: TextureError) -> Self {
+    FramebufferError::TextureError(e)
+  }
+}
+
+impl From<IncompleteReason> for FramebufferError {
+  fn from(e: IncompleteReason) -> Self {
+    FramebufferError::Incomplete(e)
   }
 }
 
@@ -65,52 +81,33 @@ impl fmt::Display for IncompleteReason {
   }
 }
 
-pub unsafe trait ColorSlot<L, D, P>
+pub unsafe trait Framebuffer<L, D>
 where
+  Self: TextureBase<L, D>,
   L: Layerable,
   D: Dimensionable,
-  D::Size: Copy,
 {
-  type ColorTextures;
+  type FramebufferRepr;
 
-  fn color_formats() -> Vec<PixelFormat>;
-
-  fn reify_textures<C, I>(
-    ctx: &mut C,
+  unsafe fn new_framebuffer(
+    &mut self,
     size: D::Size,
     mipmaps: usize,
-    textures: &mut I,
-  ) -> Self::ColorTextures
-  where
-    Self: TextureBase<L, D>,
-    C: GraphicsContext<Backend = Self>,
-    I: Iterator<Item = Self::TextureRepr>;
+    sampler: &Sampler,
+  ) -> Result<Self::FramebufferRepr, FramebufferError>;
+
+  unsafe fn destroy_framebuffer(framebuffer: &mut Self::FramebufferRepr);
+
+  unsafe fn attach_color_texture(
+    framebuffer: &mut Self::FramebufferRepr,
+    texture: &Self::TextureRepr,
+    attachment_index: usize,
+  ) -> Result<(), FramebufferError>;
+
+  unsafe fn attach_depth_texture(
+    framebuffer: &mut Self::FramebufferRepr,
+    texture: &Self::TextureRepr,
+  ) -> Result<(), FramebufferError>;
+
+  unsafe fn framebuffer_size(framebuffer: &Self::FramebufferRepr) -> D::Size;
 }
-
-//unsafe impl<L, D, B> ColorSlot<L, D, ()> for B
-//where
-//  L: Layerable,
-//  D: Dimensionable,
-//  D::Size: Copy,
-//{
-//  type ColorTextures = ();
-//
-//  fn color_formats() -> Vec<PixelFormat> {
-//    Vec::new()
-//  }
-//
-//  fn reify_textures<C, I>(
-//    ctx: &mut C,
-//    size: D::Size,
-//    mipmaps: usize,
-//    textures: &mut I,
-//  ) -> Self::ColorTextures
-//  where
-//    C: GraphicsContext<Backend = Self>,
-//    I: Iterator<Item = Self::TextureRepr>,
-//  {
-//  }
-//}
-
-//pub unsafe trait Framebuffer<L, D, CS, DS> {
-//}
