@@ -91,7 +91,7 @@ pub struct Tess<S>
 where
   S: ?Sized + TessBackend,
 {
-  repr: S::TessRepr,
+  pub(crate) repr: S::TessRepr,
 }
 
 impl<S> Drop for Tess<S>
@@ -235,13 +235,13 @@ where
   S: ?Sized + TessBackend,
 {
   /// Tessellation to render.
-  tess: &'a Tess<S>,
+  pub(crate) tess: &'a Tess<S>,
   /// Start index (vertex) in the tessellation.
-  start_index: usize,
+  pub(crate) start_index: usize,
   /// Number of vertices to pick from the tessellation.
-  vert_nb: usize,
+  pub(crate) vert_nb: usize,
   /// Number of instances to render.
-  inst_nb: usize,
+  pub(crate) inst_nb: usize,
 }
 
 impl<'a, S> TessView<'a, S>
