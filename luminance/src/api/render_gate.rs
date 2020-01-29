@@ -7,7 +7,7 @@ pub struct RenderGate<'a, C>
 where
   C: ?Sized,
 {
-  ctx: &'a mut C,
+  pub(crate) ctx: &'a mut C,
 }
 
 impl<'a, C> RenderGate<'a, C>
