@@ -12,14 +12,14 @@ use crate::vertex::Semantics;
 
 pub struct Stage<S>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   repr: S::StageRepr,
 }
 
 impl<S> Stage<S>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   pub fn new<C, R>(ctx: &mut C, ty: StageType, src: R) -> Result<Self, StageError>
   where
@@ -37,7 +37,7 @@ where
 
 impl<S> Drop for Stage<S>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   fn drop(&mut self) {
     unsafe { S::destroy_stage(&mut self.repr) }
@@ -46,7 +46,7 @@ where
 
 pub struct UniformBuilder<'a, S>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   repr: S::UniformBuilderRepr,
   warnings: Vec<UniformWarning>,
@@ -55,7 +55,7 @@ where
 
 impl<'a, S> UniformBuilder<'a, S>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   pub fn ask<T, N>(&mut self, name: N) -> Result<Uniform<T>, UniformWarning>
   where
@@ -86,7 +86,7 @@ pub trait UniformInterface<E = ()>: Sized {
     env: &mut E,
   ) -> Result<Self, UniformWarning>
   where
-    S: Shader;
+    S: ?Sized + Shader;
 }
 
 impl UniformInterface for () {
@@ -95,7 +95,7 @@ impl UniformInterface for () {
     _: &mut (),
   ) -> Result<Self, UniformWarning>
   where
-    S: Shader,
+    S: ?Sized + Shader,
   {
     Ok(())
   }
@@ -106,7 +106,7 @@ impl UniformInterface for () {
 /// The sole purpose of this type is to be destructured when a program is built.
 pub struct BuiltProgram<S, Sem, Out, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   /// Built program.
   pub program: Program<S, Sem, Out, Uni>,
@@ -116,7 +116,7 @@ where
 
 impl<S, Sem, Out, Uni> BuiltProgram<S, Sem, Out, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   /// Get the program and ignore the warnings.
   pub fn ignore_warnings(self) -> Program<S, Sem, Out, Uni> {
@@ -127,7 +127,7 @@ where
 /// A [`Program`] uniform adaptation that has failed.
 pub struct AdaptationFailure<S, Sem, Out, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   /// Program used before trying to adapt.
   pub program: Program<S, Sem, Out, Uni>,
@@ -137,7 +137,7 @@ where
 
 impl<S, Sem, Out, Uni> AdaptationFailure<S, Sem, Out, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   pub(crate) fn new(program: Program<S, Sem, Out, Uni>, error: ProgramError) -> Self {
     AdaptationFailure { program, error }
@@ -151,26 +151,26 @@ where
 
 pub struct ProgramInterface<'a, S, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
-  program: &'a mut S::ProgramRepr,
-  uniform_interface: &'a Uni,
+  pub(crate) program: &'a mut S::ProgramRepr,
+  pub(crate) uni: &'a Uni,
 }
 
 impl<'a, S, Uni> Deref for ProgramInterface<'a, S, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   type Target = Uni;
 
   fn deref(&self) -> &Self::Target {
-    self.uniform_interface
+    self.uni
   }
 }
 
 impl<'a, S, Uni> ProgramInterface<'a, S, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   pub fn query(&'a mut self) -> Result<UniformBuilder<'a, S>, ProgramError> {
     unsafe {
@@ -185,17 +185,17 @@ where
 
 pub struct Program<S, Sem, Out, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
-  repr: S::ProgramRepr,
-  uni: Uni,
+  pub(crate) repr: S::ProgramRepr,
+  pub(crate) uni: Uni,
   _sem: PhantomData<*const Sem>,
   _out: PhantomData<*const Out>,
 }
 
 impl<S, Sem, Out, Uni> Drop for Program<S, Sem, Out, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
 {
   fn drop(&mut self) {
     unsafe { S::destroy_program(&mut self.repr) }
@@ -204,7 +204,7 @@ where
 
 impl<S, Sem, Out, Uni> Program<S, Sem, Out, Uni>
 where
-  S: Shader,
+  S: ?Sized + Shader,
   Sem: Semantics,
 {
   pub fn from_stages_env<'a, C, T, G, E>(
