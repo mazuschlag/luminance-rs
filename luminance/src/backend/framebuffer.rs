@@ -81,9 +81,8 @@ impl fmt::Display for IncompleteReason {
   }
 }
 
-pub unsafe trait Framebuffer<L, D>
+pub unsafe trait Framebuffer<L, D>: TextureBase<L, D>
 where
-  Self: TextureBase<L, D>,
   L: Layerable,
   D: Dimensionable,
 {

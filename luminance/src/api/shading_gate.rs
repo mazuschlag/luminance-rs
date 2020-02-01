@@ -9,7 +9,7 @@ where
   C: ?Sized + GraphicsContext,
   C::Backend: ShadingGateBackend,
 {
-  ctx: &'a mut C,
+  pub(crate) ctx: &'a mut C,
 }
 
 impl<'a, C> ShadingGate<'a, C>
