@@ -6,20 +6,20 @@ use crate::context::GraphicsContext;
 
 pub struct Framebuffer<B, L, D, CS, DS>
 where
-  B: FramebufferBackend<L, D>,
+  B: ?Sized + FramebufferBackend<L, D>,
   L: Layerable,
   D: Dimensionable,
   CS: ColorSlot<B, L, D>,
   DS: DepthSlot<B, L, D>,
 {
-  repr: B::FramebufferRepr,
+  pub(crate) repr: B::FramebufferRepr,
   color_slot: CS::ColorTextures,
   depth_slot: DS::DepthTexture,
 }
 
 impl<B, L, D, CS, DS> Drop for Framebuffer<B, L, D, CS, DS>
 where
-  B: FramebufferBackend<L, D>,
+  B: ?Sized + FramebufferBackend<L, D>,
   L: Layerable,
   D: Dimensionable,
   CS: ColorSlot<B, L, D>,
@@ -32,7 +32,7 @@ where
 
 impl<B, L, D, CS, DS> Framebuffer<B, L, D, CS, DS>
 where
-  B: FramebufferBackend<L, D>,
+  B: ?Sized + FramebufferBackend<L, D>,
   L: Layerable,
   D: Dimensionable,
   CS: ColorSlot<B, L, D>,
