@@ -350,9 +350,7 @@ where
     Self::from_strings_env(ctx, vertex, tess, geometry, fragment, &mut ())
   }
 
-  pub fn adapt<Q>(
-    mut self,
-  ) -> Result<BuiltProgram<S, Sem, Out, Q>, AdaptationFailure<S, Sem, Out, Uni>>
+  pub fn adapt<Q>(self) -> Result<BuiltProgram<S, Sem, Out, Q>, AdaptationFailure<S, Sem, Out, Uni>>
   where
     Q: UniformInterface,
   {

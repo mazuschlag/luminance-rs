@@ -2,13 +2,7 @@
 
 use std::fmt;
 
-use crate::backend::color_slot::ColorSlot;
-use crate::backend::depth_slot::DepthSlot;
-use crate::backend::texture::{
-  Dimensionable, Layerable, Sampler, Texture, TextureBase, TextureError,
-};
-use crate::context::GraphicsContext;
-use crate::pixel::{Pixel, PixelFormat};
+use crate::backend::texture::{Dimensionable, Layerable, Sampler, TextureBase, TextureError};
 
 /// Framebuffer error.
 #[derive(Clone, Debug, Eq, PartialEq)]

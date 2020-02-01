@@ -1,9 +1,7 @@
 use crate::backend::framebuffer::{Framebuffer, FramebufferError};
-use crate::backend::texture::{
-  Dimensionable, Layerable, Sampler, Texture as TextureBackend, TextureBase,
-};
+use crate::backend::texture::{Dimensionable, Layerable, Sampler, Texture as TextureBackend};
 use crate::context::GraphicsContext;
-use crate::pixel::{ColorPixel, Pixel, PixelFormat, RenderablePixel};
+use crate::pixel::{ColorPixel, PixelFormat, RenderablePixel};
 
 use crate::api::texture::Texture;
 
