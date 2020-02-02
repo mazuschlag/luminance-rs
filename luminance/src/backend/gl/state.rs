@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::fmt;
 use std::marker::PhantomData;
 
+use crate::backend::gl::depth_test::depth_comparison_to_glenum;
 use crate::blending::{BlendingState, Equation, Factor};
 use crate::depth_test::{DepthComparison, DepthTest};
 use crate::face_culling::{FaceCullingMode, FaceCullingOrder, FaceCullingState};
@@ -209,7 +210,7 @@ impl GLState {
     depth_test_comparison: DepthComparison,
   ) {
     if self.depth_test_comparison != depth_test_comparison {
-      gl::DepthFunc(depth_test_comparison.to_glenum());
+      gl::DepthFunc(depth_comparison_to_glenum(depth_test_comparison));
       self.depth_test_comparison = depth_test_comparison;
     }
   }

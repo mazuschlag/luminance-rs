@@ -8,12 +8,12 @@ use crate::metagl::*;
 /// Reify a static pixel format at runtime.
 pub unsafe trait Pixel {
   /// Encoding of a single pixel. It should match the [`PixelFormat`] mapping.
-  type Encoding;
+  type Encoding: Copy;
 
   /// Raw encoding of a single pixel; i.e. that is, encoding of underlying values in contiguous
   /// texture memory, without taking into account channels. It should match the [`PixelFormat`]
   /// mapping.
-  type RawEncoding;
+  type RawEncoding: Copy;
 
   /// The type of sampler required to access this pixel format.
   type SamplerType: SamplerType;
