@@ -9,27 +9,26 @@ use crate::backend::tess::{
 use crate::context::GraphicsContext;
 use crate::vertex::Vertex;
 
-#[derive(Debug)]
-pub struct TessBuilder<S>
+pub struct TessBuilder<'a, C>
 where
-  S: ?Sized + TessBuilderBackend,
+  C: GraphicsContext,
+  C::Backend: TessBuilderBackend,
 {
-  repr: S::TessBuilderRepr,
+  ctx: &'a mut C,
+  repr: <C::Backend as TessBuilderBackend>::TessBuilderRepr,
 }
 
-impl<S> TessBuilder<S>
+impl<'a, C> TessBuilder<'a, C>
 where
-  S: TessBuilderBackend,
+  C: GraphicsContext,
+  C::Backend: TessBuilderBackend,
 {
-  pub fn new<C>(ctx: &mut C) -> Result<Self, TessError>
-  where
-    C: GraphicsContext<Backend = S>,
-  {
+  pub fn new(ctx: &'a mut C) -> Result<Self, TessError> {
     unsafe {
       ctx
         .backend()
         .new_tess_builder()
-        .map(|repr| TessBuilder { repr })
+        .map(move |repr| TessBuilder { ctx, repr })
     }
   }
 
@@ -38,7 +37,13 @@ where
     W: AsRef<[V]>,
     V: Vertex,
   {
-    unsafe { S::add_vertices(&mut self.repr, vertices).map(move |_| self) }
+    unsafe {
+      self
+        .ctx
+        .backend()
+        .add_vertices(&mut self.repr, vertices)
+        .map(move |_| self)
+    }
   }
 
   pub fn add_instances<V, W>(mut self, instances: W) -> Result<Self, TessError>
@@ -46,7 +51,13 @@ where
     W: AsRef<[V]>,
     V: Vertex,
   {
-    unsafe { S::add_instances(&mut self.repr, instances).map(move |_| self) }
+    unsafe {
+      self
+        .ctx
+        .backend()
+        .add_instances(&mut self.repr, instances)
+        .map(move |_| self)
+    }
   }
 
   pub fn set_indices<T, I>(mut self, indices: T) -> Result<Self, TessError>
@@ -54,35 +65,72 @@ where
     T: AsRef<[I]>,
     I: TessIndex,
   {
-    unsafe { S::set_indices(&mut self.repr, indices).map(move |_| self) }
+    unsafe {
+      self
+        .ctx
+        .backend()
+        .set_indices(&mut self.repr, indices)
+        .map(move |_| self)
+    }
   }
 
   pub fn set_mode(mut self, mode: Mode) -> Result<Self, TessError> {
-    unsafe { S::set_mode(&mut self.repr, mode).map(move |_| self) }
+    unsafe {
+      self
+        .ctx
+        .backend()
+        .set_mode(&mut self.repr, mode)
+        .map(move |_| self)
+    }
   }
 
   pub fn set_vertex_nb(mut self, nb: usize) -> Result<Self, TessError> {
-    unsafe { S::set_vertex_nb(&mut self.repr, nb).map(move |_| self) }
+    unsafe {
+      self
+        .ctx
+        .backend()
+        .set_vertex_nb(&mut self.repr, nb)
+        .map(move |_| self)
+    }
   }
 
   pub fn set_instance_nb(mut self, nb: usize) -> Result<Self, TessError> {
-    unsafe { S::set_instance_nb(&mut self.repr, nb).map(move |_| self) }
+    unsafe {
+      self
+        .ctx
+        .backend()
+        .set_instance_nb(&mut self.repr, nb)
+        .map(move |_| self)
+    }
   }
 
   pub fn set_primitive_restart_index<T>(mut self, index: T) -> Result<Self, TessError>
   where
     T: Into<Option<u32>>,
   {
-    unsafe { S::set_primitive_restart_index(&mut self.repr, index.into()).map(move |_| self) }
+    unsafe {
+      self
+        .ctx
+        .backend()
+        .set_primitive_restart_index(&mut self.repr, index.into())
+        .map(move |_| self)
+    }
   }
 }
 
-impl<S> TessBuilder<S>
+impl<'a, C> TessBuilder<'a, C>
 where
-  S: TessBackend,
+  C: GraphicsContext,
+  C::Backend: TessBuilderBackend + TessBackend,
 {
-  pub fn build(self) -> Result<Tess<S>, TessError> {
-    unsafe { S::build(self.repr).map(|repr| Tess { repr }) }
+  pub fn build(self) -> Result<Tess<C::Backend>, TessError> {
+    unsafe {
+      self
+        .ctx
+        .backend()
+        .build(self.repr)
+        .map(|repr| Tess { repr })
+    }
   }
 }
 
@@ -99,7 +147,7 @@ where
   S: ?Sized + TessBackend,
 {
   fn drop(&mut self) {
-    let _ = unsafe { S::destroy_tess(&mut self.repr) };
+    unsafe { S::destroy_tess(&mut self.repr) }
   }
 }
 

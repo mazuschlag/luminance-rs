@@ -127,6 +127,14 @@ pub enum TessError {
   LengthIncoherency(usize),
   /// Overflow when accessing underlying buffers.
   Overflow(usize, usize),
+  /// Internal error ocurring with a buffer.
+  InternalBufferError(BufferError),
+}
+
+impl From<BufferError> for TessError {
+  fn from(e: BufferError) -> Self {
+    TessError::InternalBufferError(e)
+  }
 }
 
 /// Possible tessellation index types.
@@ -138,6 +146,16 @@ pub enum TessIndexType {
   U16,
   /// 32-bit unsigned integer.
   U32,
+}
+
+impl TessIndexType {
+  pub fn bytes(self) -> usize {
+    match self {
+      TessIndexType::U8 => 1,
+      TessIndexType::U16 => 2,
+      TessIndexType::U32 => 4,
+    }
+  }
 }
 
 /// Class of tessellation indexes.
@@ -175,6 +193,7 @@ pub unsafe trait TessBuilder {
   unsafe fn new_tess_builder(&mut self) -> Result<Self::TessBuilderRepr, TessError>;
 
   unsafe fn add_vertices<V, W>(
+    &mut self,
     tess_builder: &mut Self::TessBuilderRepr,
     vertices: W,
   ) -> Result<(), TessError>
@@ -183,6 +202,7 @@ pub unsafe trait TessBuilder {
     V: Vertex;
 
   unsafe fn add_instances<V, W>(
+    &mut self,
     tess_builder: &mut Self::TessBuilderRepr,
     instances: W,
   ) -> Result<(), TessError>
@@ -191,6 +211,7 @@ pub unsafe trait TessBuilder {
     V: Vertex;
 
   unsafe fn set_indices<T, I>(
+    &mut self,
     tess_builder: &mut Self::TessBuilderRepr,
     indices: T,
   ) -> Result<(), TessError>
@@ -198,20 +219,26 @@ pub unsafe trait TessBuilder {
     T: AsRef<[I]>,
     I: TessIndex;
 
-  unsafe fn set_mode(tess_builder: &mut Self::TessBuilderRepr, mode: Mode)
-    -> Result<(), TessError>;
+  unsafe fn set_mode(
+    &mut self,
+    tess_builder: &mut Self::TessBuilderRepr,
+    mode: Mode,
+  ) -> Result<(), TessError>;
 
   unsafe fn set_vertex_nb(
+    &mut self,
     tess_builder: &mut Self::TessBuilderRepr,
     nb: usize,
   ) -> Result<(), TessError>;
 
   unsafe fn set_instance_nb(
+    &mut self,
     tess_builder: &mut Self::TessBuilderRepr,
     nb: usize,
   ) -> Result<(), TessError>;
 
   unsafe fn set_primitive_restart_index(
+    &mut self,
     tess_builder: &mut Self::TessBuilderRepr,
     index: Option<u32>,
   ) -> Result<(), TessError>;
@@ -220,9 +247,12 @@ pub unsafe trait TessBuilder {
 pub unsafe trait Tess: TessBuilder {
   type TessRepr;
 
-  unsafe fn build(tess_builder: Self::TessBuilderRepr) -> Result<Self::TessRepr, TessError>;
+  unsafe fn build(
+    &mut self,
+    tess_builder: Self::TessBuilderRepr,
+  ) -> Result<Self::TessRepr, TessError>;
 
-  unsafe fn destroy_tess(tess: &mut Self::TessRepr) -> Result<(), TessError>;
+  unsafe fn destroy_tess(tess: &mut Self::TessRepr);
 
   unsafe fn tess_vertices_nb(tess: &Self::TessRepr) -> usize;
 

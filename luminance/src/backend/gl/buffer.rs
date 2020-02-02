@@ -17,9 +17,9 @@ use crate::backend::gl::GL;
 /// OpenGL buffer.
 #[derive(Clone)]
 pub struct RawBuffer {
-  handle: GLuint,
-  bytes: usize,
-  len: usize,
+  pub(crate) handle: GLuint,
+  pub(crate) bytes: usize,
+  pub(crate) len: usize,
   state: Rc<RefCell<GLState>>,
 }
 

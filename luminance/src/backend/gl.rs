@@ -4,6 +4,7 @@ pub mod buffer;
 pub mod depth_test;
 pub mod pixel;
 pub mod state;
+pub mod tess;
 pub mod texture;
 
 use self::state::GLState;
