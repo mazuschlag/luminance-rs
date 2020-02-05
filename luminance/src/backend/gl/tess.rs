@@ -16,6 +16,7 @@ use crate::vertex::{
   Normalized, Vertex, VertexAttribDesc, VertexAttribDim, VertexAttribType, VertexBufferDesc,
   VertexDesc, VertexInstancing,
 };
+use crate::vertex_restart::VertexRestart;
 
 struct VertexBuffer {
   /// Indexed format of the buffer.
@@ -369,7 +370,55 @@ unsafe impl TessBackend for GL {
     vert_nb: usize,
     inst_nb: usize,
   ) -> Result<(), TessError> {
-    todo!()
+    let vert_nb = vert_nb as GLsizei;
+    let inst_nb = inst_nb as GLsizei;
+
+    let mut gfx_st = tess.state.borrow_mut();
+    gfx_st.bind_vertex_array(tess.vao, Bind::Cached);
+
+    if tess.mode == gl::PATCHES {
+      gfx_st.set_patch_vertex_nb(tess.patch_vert_nb);
+    }
+
+    if let Some(index_state) = tess.index_state.as_ref() {
+      // indexed render
+      let first = (index_state.index_type.bytes() * start_index) as *const c_void;
+
+      if let Some(restart_index) = index_state.restart_index {
+        gfx_st.set_vertex_restart(VertexRestart::On);
+        gl::PrimitiveRestartIndex(restart_index);
+      } else {
+        gfx_st.set_vertex_restart(VertexRestart::Off);
+      }
+
+      if inst_nb <= 1 {
+        gl::DrawElements(
+          tess.mode,
+          vert_nb,
+          index_type_to_glenum(index_state.index_type),
+          first,
+        );
+      } else {
+        gl::DrawElementsInstanced(
+          tess.mode,
+          vert_nb,
+          index_type_to_glenum(index_state.index_type),
+          first,
+          inst_nb,
+        );
+      }
+    } else {
+      // direct render
+      let first = start_index as GLint;
+
+      if inst_nb <= 1 {
+        gl::DrawArrays(tess.mode, first, vert_nb);
+      } else {
+        gl::DrawArraysInstanced(tess.mode, first, vert_nb, inst_nb);
+      }
+    }
+
+    Ok(())
   }
 }
 
@@ -517,5 +566,13 @@ fn opengl_mode(mode: Mode) -> GLenum {
     Mode::TriangleFan => gl::TRIANGLE_FAN,
     Mode::TriangleStrip => gl::TRIANGLE_STRIP,
     Mode::Patch(_) => gl::PATCHES,
+  }
+}
+
+fn index_type_to_glenum(ty: TessIndexType) -> GLenum {
+  match ty {
+    TessIndexType::U8 => gl::UNSIGNED_BYTE,
+    TessIndexType::U16 => gl::UNSIGNED_SHORT,
+    TessIndexType::U32 => gl::UNSIGNED_INT,
   }
 }

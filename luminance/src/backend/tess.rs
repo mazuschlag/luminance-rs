@@ -148,6 +148,16 @@ pub enum TessIndexType {
   U32,
 }
 
+impl TessIndexType {
+  pub fn bytes(self) -> usize {
+    match self {
+      TessIndexType::U8 => 1,
+      TessIndexType::U16 => 2,
+      TessIndexType::U32 => 4,
+    }
+  }
+}
+
 /// Class of tessellation indexes.
 ///
 /// Values which types implement this trait are allowed to be used to index tessellation in *indexed
