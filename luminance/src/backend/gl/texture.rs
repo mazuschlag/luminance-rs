@@ -51,22 +51,20 @@ where
     let mut handle = 0;
     let target = opengl_target(L::layering(), D::dim());
 
-    unsafe {
-      gl::GenTextures(1, &mut handle);
-      self.state.borrow_mut().bind_texture(target, handle);
+    gl::GenTextures(1, &mut handle);
+    self.state.borrow_mut().bind_texture(target, handle);
 
-      create_texture::<L, D>(target, size, mipmaps, P::pixel_format(), sampler)?;
+    create_texture::<L, D>(target, size, mipmaps, P::pixel_format(), sampler)?;
 
-      let texture = GLTexture {
-        handle,
-        target,
-        size,
-        mipmaps,
-        state: self.state.clone(),
-      };
+    let texture = GLTexture {
+      handle,
+      target,
+      size,
+      mipmaps,
+      state: self.state.clone(),
+    };
 
-      Ok(texture)
-    }
+    Ok(texture)
   }
 
   unsafe fn destroy_texture(texture: &mut Self::TextureRepr) {
