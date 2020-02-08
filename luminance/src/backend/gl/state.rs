@@ -55,6 +55,14 @@ pub struct GLState {
   current_texture_unit: GLenum,
   bound_textures: Vec<(GLenum, GLuint)>,
 
+  // texture buffer used to optimize texture creation; regular textures typically will never ask
+  // for fetching from this set but framebuffers, who often generate several textures, might use
+  // this opportunity to get N textures (color, depth and stencil) at once, in a single CPU / GPU
+  // roundtrip
+  //
+  // fishy fishy
+  texture_swimming_pool: Vec<GLuint>,
+
   // uniform buffer
   bound_uniform_buffers: Vec<GLuint>,
 
@@ -115,6 +123,7 @@ impl GLState {
       let patch_vertex_nb = 0;
       let current_texture_unit = get_ctx_current_texture_unit()?;
       let bound_textures = vec![(gl::TEXTURE_2D, 0); 48]; // 48 is the platform minimal requirement
+      let texture_swimming_pool = Vec::new();
       let bound_uniform_buffers = vec![0; 36]; // 36 is the platform minimal requirement
       let bound_array_buffer = 0;
       let bound_element_array_buffer = 0;
@@ -139,6 +148,7 @@ impl GLState {
         patch_vertex_nb,
         current_texture_unit,
         bound_textures,
+        texture_swimming_pool,
         bound_uniform_buffers,
         bound_array_buffer,
         bound_element_array_buffer,
@@ -147,6 +157,30 @@ impl GLState {
         current_program,
         srgb_framebuffer_enabled,
       })
+    }
+  }
+
+  pub(crate) fn generate_texture(&mut self) -> GLuint {
+    self.texture_swimming_pool.pop().unwrap_or_else(|| {
+      let mut texture = 0;
+
+      unsafe { gl::GenTextures(1, &mut texture) };
+      texture
+    })
+  }
+
+  /// Reserve at least a given number of textures.
+  pub(crate) fn reserve_textures(&mut self, nb: usize) {
+    let available = self.texture_swimming_pool.len();
+    let needed = nb.max(available) - available;
+
+    if needed > 0 {
+      // resize the internal buffer to hold all the new textures and create a slice starting from
+      // the previous end to the new end
+      self.texture_swimming_pool.resize(available + needed, 0);
+      let textures = &mut self.texture_swimming_pool[available..];
+
+      unsafe { gl::GenTextures(1, textures.as_mut_ptr()) };
     }
   }
 
