@@ -6,12 +6,13 @@ use std::rc::Rc;
 use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
 use crate::backend::framebuffer::{
-  Framebuffer as FramebufferBackend, FramebufferError, IncompleteReason,
+  Framebuffer as FramebufferBackend, FramebufferBackBuffer, FramebufferBase, FramebufferError,
+  IncompleteReason,
 };
 use crate::backend::gl::state::{Bind, GLState};
 use crate::backend::gl::texture::opengl_target;
 use crate::backend::gl::GL;
-use crate::backend::texture::{Dimensionable, Layerable, Sampler};
+use crate::backend::texture::{Dim2, Dimensionable, Layerable, Sampler};
 
 pub struct Framebuffer<D>
 where
@@ -23,13 +24,19 @@ where
   state: Rc<RefCell<GLState>>,
 }
 
-unsafe impl<L, D> FramebufferBackend<L, D> for GL
+unsafe impl<L, D> FramebufferBase<L, D> for GL
 where
   L: Layerable,
   D: Dimensionable,
 {
   type FramebufferRepr = Framebuffer<D>;
+}
 
+unsafe impl<L, D> FramebufferBackend<L, D> for GL
+where
+  L: Layerable,
+  D: Dimensionable,
+{
   unsafe fn new_framebuffer<CS, DS>(
     &mut self,
     size: D::Size,
@@ -175,5 +182,19 @@ fn get_framebuffer_status() -> Result<(), IncompleteReason> {
       "unknown OpenGL framebuffer incomplete status! status={}",
       status
     ),
+  }
+}
+
+unsafe impl FramebufferBackBuffer for GL {
+  unsafe fn back_buffer(
+    &mut self,
+    size: <Dim2 as Dimensionable>::Size,
+  ) -> Result<Self::FramebufferRepr, FramebufferError> {
+    Ok(Framebuffer {
+      handle: 0,
+      renderbuffer: None,
+      size,
+      state: self.state.clone(),
+    })
   }
 }

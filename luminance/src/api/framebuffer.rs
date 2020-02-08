@@ -1,7 +1,9 @@
 use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
-use crate::backend::framebuffer::{Framebuffer as FramebufferBackend, FramebufferError};
-use crate::backend::texture::{Dimensionable, Layerable, Sampler};
+use crate::backend::framebuffer::{
+  Framebuffer as FramebufferBackend, FramebufferBackBuffer, FramebufferError,
+};
+use crate::backend::texture::{Dim2, Dimensionable, Flat, Layerable, Sampler};
 use crate::context::GraphicsContext;
 
 pub struct Framebuffer<B, L, D, CS, DS>
@@ -74,5 +76,24 @@ where
 
   pub fn depth_slot(&self) -> &DS::DepthTexture {
     &self.depth_slot
+  }
+}
+
+impl<B> Framebuffer<B, Flat, Dim2, (), ()>
+where
+  B: ?Sized + FramebufferBackend<Flat, Dim2> + FramebufferBackBuffer,
+{
+  pub fn back_buffer<C>(
+    ctx: &mut C,
+    size: <Dim2 as Dimensionable>::Size,
+  ) -> Result<Self, FramebufferError>
+  where
+    C: GraphicsContext<Backend = B>,
+  {
+    unsafe { ctx.backend().back_buffer(size) }.map(|repr| Framebuffer {
+      repr,
+      color_slot: (),
+      depth_slot: (),
+    })
   }
 }

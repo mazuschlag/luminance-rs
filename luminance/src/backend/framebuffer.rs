@@ -4,7 +4,9 @@ use std::fmt;
 
 use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
-use crate::backend::texture::{Dimensionable, Layerable, Sampler, TextureBase, TextureError};
+use crate::backend::texture::{
+  Dim2, Dimensionable, Flat, Layerable, Sampler, TextureBase, TextureError,
+};
 
 /// Framebuffer error.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -77,13 +79,19 @@ impl fmt::Display for IncompleteReason {
   }
 }
 
-pub unsafe trait Framebuffer<L, D>: TextureBase<L, D>
+pub unsafe trait FramebufferBase<L, D>
 where
   L: Layerable,
   D: Dimensionable,
 {
   type FramebufferRepr;
+}
 
+pub unsafe trait Framebuffer<L, D>: FramebufferBase<L, D> + TextureBase<L, D>
+where
+  L: Layerable,
+  D: Dimensionable,
+{
   unsafe fn new_framebuffer<CS, DS>(
     &mut self,
     size: D::Size,
@@ -112,4 +120,11 @@ where
   ) -> Result<Self::FramebufferRepr, FramebufferError>;
 
   unsafe fn framebuffer_size(framebuffer: &Self::FramebufferRepr) -> D::Size;
+}
+
+pub unsafe trait FramebufferBackBuffer: FramebufferBase<Flat, Dim2> {
+  unsafe fn back_buffer(
+    &mut self,
+    size: <Dim2 as Dimensionable>::Size,
+  ) -> Result<Self::FramebufferRepr, FramebufferError>;
 }
