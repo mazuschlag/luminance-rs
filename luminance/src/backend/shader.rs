@@ -121,7 +121,25 @@ pub enum UniformWarning {
   /// and the type that got reflected from the backend in the shaders.
   ///
   /// The first `String` is the name of the uniform; the second one gives the type mismatch.
-  TypeMismatch(String, StageType),
+  TypeMismatch(String, UniformType),
+}
+
+impl UniformWarning {
+  /// Create an inactive uniform warning.
+  pub fn inactive<N>(name: N) -> Self
+  where
+    N: Into<String>,
+  {
+    UniformWarning::Inactive(name.into())
+  }
+
+  /// Create a type mismatch.
+  pub fn type_mismatch<N>(name: N, ty: UniformType) -> Self
+  where
+    N: Into<String>,
+  {
+    UniformWarning::TypeMismatch(name.into(), ty)
+  }
 }
 
 impl fmt::Display for UniformWarning {
@@ -169,6 +187,15 @@ where
 {
   index: i32,
   _t: PhantomData<*const T>,
+}
+
+impl<T> Uniform<T> {
+  pub(crate) fn new(index: i32) -> Self {
+    Uniform {
+      index,
+      _t: PhantomData,
+    }
+  }
 }
 
 /// Type of a uniform.
@@ -292,9 +319,9 @@ pub unsafe trait Uniformable<S>
 where
   S: ?Sized + Shader,
 {
-  unsafe fn update(self, program: &mut S::ProgramRepr, uniform: &mut Uniform<Self>);
-
   unsafe fn ty() -> UniformType;
+
+  unsafe fn update(self, program: &mut S::ProgramRepr, uniform: &mut Uniform<Self>);
 }
 
 pub unsafe trait Shader {
