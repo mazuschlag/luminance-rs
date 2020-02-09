@@ -196,6 +196,10 @@ impl<T> Uniform<T> {
       _t: PhantomData,
     }
   }
+
+  pub fn index(&self) -> i32 {
+    self.index
+  }
 }
 
 /// Type of a uniform.
