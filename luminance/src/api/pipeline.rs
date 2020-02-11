@@ -1,11 +1,13 @@
 use crate::api::framebuffer::Framebuffer;
 use crate::api::shading_gate::ShadingGate;
+use crate::api::texture::Texture;
 use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
 use crate::backend::framebuffer::Framebuffer as FramebufferBackend;
-use crate::backend::pipeline::{Pipeline as PipelineBackend, PipelineError};
-use crate::backend::texture::{Dimensionable, Layerable};
+use crate::backend::pipeline::{Bound as BoundBackend, Pipeline as PipelineBackend, PipelineError};
+use crate::backend::texture::{Dimensionable, Layerable, Texture as TextureBackend};
 use crate::context::GraphicsContext;
+use crate::pixel::Pixel;
 
 use std::marker::PhantomData;
 
@@ -179,4 +181,55 @@ where
 {
   repr: B::PipelineRepr,
   _a: PhantomData<&'a mut ()>,
+}
+
+impl<'a, B> Pipeline<'a, B>
+where
+  B: PipelineBackend,
+{
+  pub fn bind_texture<L, D, P>(
+    &'a self,
+    texture: &'a Texture<B, L, D, P>,
+  ) -> Result<BoundTexture<'a, B, L, D, P::SamplerType>, PipelineError>
+  where
+    B: TextureBackend<L, D, P>,
+    L: 'a + Layerable,
+    D: 'a + Dimensionable,
+    P: 'a + Pixel,
+  {
+    unsafe {
+      B::bind_texture(&self.repr, &texture.repr).map(|repr| BoundTexture {
+        repr,
+        _t: PhantomData,
+      })
+    }
+  }
+
+  pub fn bind<T>(&'a self, resource: &'a T) -> Result<Bound<'a, B, T>, PipelineError>
+  where
+    B: BoundBackend<T>,
+  {
+    unsafe {
+      B::bind_resource(&self.repr, resource).map(|repr| Bound {
+        repr,
+        _t: PhantomData,
+      })
+    }
+  }
+}
+
+pub struct BoundTexture<'a, B, L, D, S>
+where
+  B: PipelineBackend,
+{
+  repr: B::BoundTextureRepr,
+  _t: PhantomData<&'a (L, D, S)>,
+}
+
+pub struct Bound<'a, B, T>
+where
+  B: PipelineBackend + BoundBackend<T>,
+{
+  repr: B::BoundRepr,
+  _t: PhantomData<&'a T>,
 }
