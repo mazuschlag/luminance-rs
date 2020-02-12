@@ -6,8 +6,7 @@ use std::rc::Rc;
 use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
 use crate::backend::framebuffer::{
-  Framebuffer as FramebufferBackend, FramebufferBackBuffer, FramebufferBase, FramebufferError,
-  IncompleteReason,
+  Framebuffer as FramebufferBackend, FramebufferBackBuffer, FramebufferError, IncompleteReason,
 };
 use crate::backend::gl::state::{Bind, GLState};
 use crate::backend::gl::texture::opengl_target;
@@ -18,18 +17,10 @@ pub struct Framebuffer<D>
 where
   D: Dimensionable,
 {
-  handle: GLuint,
+  pub(crate) handle: GLuint,
   renderbuffer: Option<GLuint>,
-  size: D::Size,
+  pub(crate) size: D::Size,
   state: Rc<RefCell<GLState>>,
-}
-
-unsafe impl<L, D> FramebufferBase<L, D> for GL
-where
-  L: Layerable,
-  D: Dimensionable,
-{
-  type FramebufferRepr = Framebuffer<D>;
 }
 
 unsafe impl<L, D> FramebufferBackend<L, D> for GL
@@ -37,6 +28,8 @@ where
   L: Layerable,
   D: Dimensionable,
 {
+  type FramebufferRepr = Framebuffer<D>;
+
   unsafe fn new_framebuffer<CS, DS>(
     &mut self,
     size: D::Size,

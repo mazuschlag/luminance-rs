@@ -79,19 +79,13 @@ impl fmt::Display for IncompleteReason {
   }
 }
 
-pub unsafe trait FramebufferBase<L, D>
+pub unsafe trait Framebuffer<L, D>: TextureBase<L, D>
 where
   L: Layerable,
   D: Dimensionable,
 {
   type FramebufferRepr;
-}
 
-pub unsafe trait Framebuffer<L, D>: FramebufferBase<L, D> + TextureBase<L, D>
-where
-  L: Layerable,
-  D: Dimensionable,
-{
   unsafe fn new_framebuffer<CS, DS>(
     &mut self,
     size: D::Size,
@@ -122,7 +116,7 @@ where
   unsafe fn framebuffer_size(framebuffer: &Self::FramebufferRepr) -> D::Size;
 }
 
-pub unsafe trait FramebufferBackBuffer: FramebufferBase<Flat, Dim2> {
+pub unsafe trait FramebufferBackBuffer: Framebuffer<Flat, Dim2> {
   unsafe fn back_buffer(
     &mut self,
     size: <Dim2 as Dimensionable>::Size,

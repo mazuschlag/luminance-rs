@@ -16,6 +16,25 @@ use crate::vertex_restart::VertexRestart;
 // Note: disable on no_std.
 thread_local!(static TLS_ACQUIRE_GFX_STATE: RefCell<Option<()>> = RefCell::new(Some(())));
 
+pub struct BindingStack {
+  next_texture_unit: u32,
+  free_texture_units: Vec<u32>,
+  next_buffer_binding: u32,
+  free_buffer_bindings: Vec<u32>,
+}
+
+impl BindingStack {
+  // Create a new, empty binding stack.
+  fn new() -> Self {
+    BindingStack {
+      next_texture_unit: 0,
+      free_texture_units: Vec::new(),
+      next_buffer_binding: 0,
+      free_buffer_bindings: Vec::new(),
+    }
+  }
+}
+
 /// The graphics state.
 ///
 /// This type represents the current state of a given graphics context. It acts
@@ -24,6 +43,9 @@ thread_local!(static TLS_ACQUIRE_GFX_STATE: RefCell<Option<()>> = RefCell::new(S
 /// the same parameters).
 pub struct GLState {
   _a: PhantomData<*const ()>, // !Send and !Sync
+
+  // binding stack
+  binding_stack: BindingStack,
 
   // viewport
   viewport: [GLint; 4],
@@ -109,6 +131,7 @@ impl GLState {
   /// Get a `GraphicsContext` from the current OpenGL context.
   pub(crate) fn get_from_context() -> Result<Self, StateQueryError> {
     unsafe {
+      let binding_stack = BindingStack::new();
       let viewport = get_ctx_viewport()?;
       let clear_color = get_ctx_clear_color()?;
       let blending_state = get_ctx_blending_state()?;
@@ -134,6 +157,7 @@ impl GLState {
 
       Ok(GLState {
         _a: PhantomData,
+        binding_stack,
         viewport,
         clear_color,
         blending_state,

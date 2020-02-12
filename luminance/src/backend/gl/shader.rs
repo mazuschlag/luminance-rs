@@ -19,7 +19,7 @@ pub struct Stage {
 
 #[derive(Debug)]
 pub struct Program {
-  handle: GLuint,
+  pub(crate) handle: GLuint,
 }
 
 impl Program {

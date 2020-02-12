@@ -3,6 +3,7 @@
 pub mod buffer;
 pub mod depth_test;
 pub mod framebuffer;
+pub mod pipeline;
 pub mod pixel;
 pub mod shader;
 pub mod state;
