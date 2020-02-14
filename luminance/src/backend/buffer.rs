@@ -16,7 +16,7 @@ pub unsafe trait Buffer<T> {
   /// Create a new buffer with a given number of uninitialized elements.
   unsafe fn new_buffer(&mut self, len: usize) -> Result<Self::BufferRepr, BufferError>;
 
-  unsafe fn destroy_buffer(buffer: &mut Self::BufferRepr) -> Result<(), BufferError>;
+  unsafe fn destroy_buffer(buffer: &mut Self::BufferRepr);
 
   unsafe fn len(buffer: &Self::BufferRepr) -> usize;
 
@@ -111,16 +111,21 @@ impl fmt::Display for BufferError {
 pub unsafe trait BufferSlice<T>: Buffer<T> {
   type SliceRepr;
 
+  type SliceMutRepr;
+
   unsafe fn slice_buffer(buffer: &Self::BufferRepr) -> Result<Self::SliceRepr, BufferError>;
 
-  unsafe fn slice_buffer_mut(buffer: &mut Self::BufferRepr)
-    -> Result<Self::SliceRepr, BufferError>;
+  unsafe fn slice_buffer_mut(
+    buffer: &mut Self::BufferRepr,
+  ) -> Result<Self::SliceMutRepr, BufferError>;
 
-  unsafe fn destroy_buffer_slice(slice: &mut Self::SliceRepr) -> Result<(), BufferError>;
+  unsafe fn destroy_buffer_slice(slice: &mut Self::SliceRepr);
+
+  unsafe fn destroy_buffer_slice_mut(slice: &mut Self::SliceMutRepr);
 
   unsafe fn obtain_slice(slice: &Self::SliceRepr) -> Result<&[T], BufferError>;
 
-  unsafe fn obtain_slice_mut(slice: &mut Self::SliceRepr) -> Result<&mut [T], BufferError>;
+  unsafe fn obtain_slice_mut(slice: &mut Self::SliceMutRepr) -> Result<&mut [T], BufferError>;
 }
 
 pub unsafe trait UniformBlock {}

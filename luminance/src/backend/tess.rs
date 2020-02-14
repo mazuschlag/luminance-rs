@@ -74,9 +74,7 @@ pub enum Mode {
 #[derive(Debug, Eq, PartialEq)]
 pub enum TessMapError {
   /// The CPU mapping failed due to buffer errors.
-  VertexBufferMapFailed(BufferError),
-  /// The CPU mapping failed due to buffer errors.
-  IndexBufferMapFailed(BufferError),
+  BufferMapError(BufferError),
   /// Vertex target type is not the same as the one stored in the buffer.
   VertexTypeMismatch(VertexDesc, VertexDesc),
   /// Index target type is not the same as the one stored in the buffer.
@@ -92,12 +90,7 @@ pub enum TessMapError {
 impl fmt::Display for TessMapError {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     match *self {
-      TessMapError::VertexBufferMapFailed(ref e) => {
-        write!(f, "cannot map tessellation vertex buffer: {}", e)
-      }
-      TessMapError::IndexBufferMapFailed(ref e) => {
-        write!(f, "cannot map tessellation index buffer: {}", e)
-      }
+      TessMapError::BufferMapError(ref e) => write!(f, "cannot map tessellation buffer: {}", e),
       TessMapError::VertexTypeMismatch(ref a, ref b) => write!(
         f,
         "cannot map tessellation: vertex type mismatch between {:?} and {:?}",
@@ -269,13 +262,19 @@ pub unsafe trait Tess: TessBuilder {
 pub unsafe trait TessSlice<T>: Tess {
   type SliceRepr;
 
-  unsafe fn destroy_tess_slice(slice: &mut Self::SliceRepr) -> Result<(), TessMapError>;
+  type SliceMutRepr;
+
+  unsafe fn destroy_tess_slice(slice: &mut Self::SliceRepr);
+
+  unsafe fn destroy_tess_slice_mut(slice: &mut Self::SliceMutRepr);
 
   unsafe fn slice_vertices(tess: &Self::TessRepr) -> Result<Self::SliceRepr, TessMapError>
   where
     T: Vertex;
 
-  unsafe fn slice_vertices_mut(tess: &mut Self::TessRepr) -> Result<Self::SliceRepr, TessMapError>
+  unsafe fn slice_vertices_mut(
+    tess: &mut Self::TessRepr,
+  ) -> Result<Self::SliceMutRepr, TessMapError>
   where
     T: Vertex;
 
@@ -283,7 +282,9 @@ pub unsafe trait TessSlice<T>: Tess {
   where
     T: TessIndex;
 
-  unsafe fn slice_indices_mut(tess: &mut Self::TessRepr) -> Result<Self::SliceRepr, TessMapError>
+  unsafe fn slice_indices_mut(
+    tess: &mut Self::TessRepr,
+  ) -> Result<Self::SliceMutRepr, TessMapError>
   where
     T: TessIndex;
 
@@ -291,11 +292,13 @@ pub unsafe trait TessSlice<T>: Tess {
   where
     T: Vertex;
 
-  unsafe fn slice_instances_mut(tess: &mut Self::TessRepr) -> Result<Self::SliceRepr, TessMapError>
+  unsafe fn slice_instances_mut(
+    tess: &mut Self::TessRepr,
+  ) -> Result<Self::SliceMutRepr, TessMapError>
   where
     T: Vertex;
 
   unsafe fn obtain_slice(slice: &Self::SliceRepr) -> Result<&[T], TessMapError>;
 
-  unsafe fn obtain_slice_mut(slice: &mut Self::SliceRepr) -> Result<&mut [T], TessMapError>;
+  unsafe fn obtain_slice_mut(slice: &mut Self::SliceMutRepr) -> Result<&mut [T], TessMapError>;
 }

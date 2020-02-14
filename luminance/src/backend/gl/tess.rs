@@ -5,12 +5,13 @@ use std::os::raw::c_void;
 use std::ptr;
 use std::rc::Rc;
 
-use crate::backend::buffer::Buffer as _;
-use crate::backend::gl::buffer::RawBuffer;
+use crate::backend::buffer::{Buffer as _, BufferSlice as BufferSliceBackend};
+use crate::backend::gl::buffer::{BufferSlice, BufferSliceMut, RawBuffer};
 use crate::backend::gl::state::{Bind, GLState};
 use crate::backend::gl::GL;
 use crate::backend::tess::{
-  Mode, Tess as TessBackend, TessBuilder as TessBuilderBackend, TessError, TessIndex, TessIndexType,
+  Mode, Tess as TessBackend, TessBuilder as TessBuilderBackend, TessError, TessIndex,
+  TessIndexType, TessMapError, TessSlice,
 };
 use crate::vertex::{
   Normalized, Vertex, VertexAttribDesc, VertexAttribDim, VertexAttribType, VertexBufferDesc,
@@ -419,6 +420,166 @@ unsafe impl TessBackend for GL {
     }
 
     Ok(())
+  }
+}
+
+unsafe impl<T> TessSlice<T> for GL {
+  type SliceRepr = BufferSlice<T>;
+
+  type SliceMutRepr = BufferSliceMut<T>;
+
+  unsafe fn destroy_tess_slice(slice: &mut Self::SliceRepr) {
+    <GL as BufferSliceBackend<T>>::destroy_buffer_slice(slice);
+  }
+
+  unsafe fn destroy_tess_slice_mut(slice: &mut Self::SliceMutRepr) {
+    <GL as BufferSliceBackend<T>>::destroy_buffer_slice_mut(slice);
+  }
+
+  unsafe fn slice_vertices(tess: &Self::TessRepr) -> Result<Self::SliceRepr, TessMapError>
+  where
+    T: Vertex,
+  {
+    match tess.vertex_buffers.len() {
+      0 => Err(TessMapError::ForbiddenAttributelessMapping),
+
+      1 => {
+        let vb = &tess.vertex_buffers[0];
+        let target_fmt = T::vertex_desc(); // costs a bit
+
+        if vb.fmt != target_fmt {
+          Err(TessMapError::VertexTypeMismatch(vb.fmt.clone(), target_fmt))
+        } else {
+          GL::slice_buffer(&vb.buf).map_err(TessMapError::BufferMapError)
+        }
+      }
+
+      _ => Err(TessMapError::ForbiddenDeinterleavedMapping),
+    }
+  }
+
+  unsafe fn slice_vertices_mut(
+    tess: &mut Self::TessRepr,
+  ) -> Result<Self::SliceMutRepr, TessMapError>
+  where
+    T: Vertex,
+  {
+    match tess.vertex_buffers.len() {
+      0 => Err(TessMapError::ForbiddenAttributelessMapping),
+
+      1 => {
+        let vb = &mut tess.vertex_buffers[0];
+        let target_fmt = T::vertex_desc(); // costs a bit
+
+        if vb.fmt != target_fmt {
+          Err(TessMapError::VertexTypeMismatch(vb.fmt.clone(), target_fmt))
+        } else {
+          GL::slice_buffer_mut(&mut vb.buf).map_err(TessMapError::BufferMapError)
+        }
+      }
+
+      _ => Err(TessMapError::ForbiddenDeinterleavedMapping),
+    }
+  }
+
+  unsafe fn slice_indices(tess: &Self::TessRepr) -> Result<Self::SliceRepr, TessMapError>
+  where
+    T: TessIndex,
+  {
+    match tess.index_state {
+      Some(IndexedDrawState {
+        ref _buffer,
+        ref index_type,
+        ..
+      }) => {
+        let target_fmt = T::INDEX_TYPE;
+
+        if *index_type != target_fmt {
+          Err(TessMapError::IndexTypeMismatch(*index_type, target_fmt))
+        } else {
+          GL::slice_buffer(_buffer).map_err(TessMapError::BufferMapError)
+        }
+      }
+
+      None => Err(TessMapError::ForbiddenAttributelessMapping),
+    }
+  }
+
+  unsafe fn slice_indices_mut(tess: &mut Self::TessRepr) -> Result<Self::SliceMutRepr, TessMapError>
+  where
+    T: TessIndex,
+  {
+    match tess.index_state {
+      Some(IndexedDrawState {
+        ref mut _buffer,
+        ref index_type,
+        ..
+      }) => {
+        let target_fmt = T::INDEX_TYPE;
+
+        if *index_type != target_fmt {
+          Err(TessMapError::IndexTypeMismatch(*index_type, target_fmt))
+        } else {
+          GL::slice_buffer_mut(_buffer).map_err(TessMapError::BufferMapError)
+        }
+      }
+
+      None => Err(TessMapError::ForbiddenAttributelessMapping),
+    }
+  }
+
+  unsafe fn slice_instances(tess: &Self::TessRepr) -> Result<Self::SliceRepr, TessMapError>
+  where
+    T: Vertex,
+  {
+    match tess.instance_buffers.len() {
+      0 => Err(TessMapError::ForbiddenAttributelessMapping),
+
+      1 => {
+        let vb = &tess.instance_buffers[0];
+        let target_fmt = T::vertex_desc(); // costs a bit
+
+        if vb.fmt != target_fmt {
+          Err(TessMapError::VertexTypeMismatch(vb.fmt.clone(), target_fmt))
+        } else {
+          GL::slice_buffer(&vb.buf).map_err(TessMapError::BufferMapError)
+        }
+      }
+
+      _ => Err(TessMapError::ForbiddenDeinterleavedMapping),
+    }
+  }
+
+  unsafe fn slice_instances_mut(
+    tess: &mut Self::TessRepr,
+  ) -> Result<Self::SliceMutRepr, TessMapError>
+  where
+    T: Vertex,
+  {
+    match tess.instance_buffers.len() {
+      0 => Err(TessMapError::ForbiddenAttributelessMapping),
+
+      1 => {
+        let vb = &mut tess.instance_buffers[0];
+        let target_fmt = T::vertex_desc(); // costs a bit
+
+        if vb.fmt != target_fmt {
+          Err(TessMapError::VertexTypeMismatch(vb.fmt.clone(), target_fmt))
+        } else {
+          GL::slice_buffer_mut(&mut vb.buf).map_err(TessMapError::BufferMapError)
+        }
+      }
+
+      _ => Err(TessMapError::ForbiddenDeinterleavedMapping),
+    }
+  }
+
+  unsafe fn obtain_slice(slice: &Self::SliceRepr) -> Result<&[T], TessMapError> {
+    <GL as BufferSliceBackend<T>>::obtain_slice(slice).map_err(TessMapError::BufferMapError)
+  }
+
+  unsafe fn obtain_slice_mut(slice: &mut Self::SliceMutRepr) -> Result<&mut [T], TessMapError> {
+    <GL as BufferSliceBackend<T>>::obtain_slice_mut(slice).map_err(TessMapError::BufferMapError)
   }
 }
 

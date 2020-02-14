@@ -101,7 +101,7 @@ unsafe impl TessGate for GL {
     vert_nb: usize,
     inst_nb: usize,
   ) {
-    <Self as Tess>::render(tess, start_index, vert_nb, inst_nb);
+    let _ = <Self as Tess>::render(tess, start_index, vert_nb, inst_nb);
   }
 }
 

@@ -10,7 +10,7 @@ use std::ptr;
 use std::rc::Rc;
 use std::slice;
 
-use crate::backend::buffer::{Buffer, BufferError, BufferSlice};
+use crate::backend::buffer::{Buffer, BufferError, BufferSlice as BufferSliceBackend};
 use crate::backend::gl::state::{Bind, GLState};
 use crate::backend::gl::GL;
 
@@ -53,10 +53,9 @@ unsafe impl<T> Buffer<T> for GL {
     })
   }
 
-  unsafe fn destroy_buffer(buffer: &mut Self::BufferRepr) -> Result<(), BufferError> {
+  unsafe fn destroy_buffer(buffer: &mut Self::BufferRepr) {
     buffer.state.borrow_mut().unbind_buffer(buffer.handle);
     gl::DeleteBuffers(1, &buffer.handle);
-    Ok(())
   }
 
   unsafe fn len(buffer: &Self::BufferRepr) -> usize {
@@ -200,13 +199,20 @@ unsafe impl<T> Buffer<T> for GL {
   }
 }
 
-pub struct GLBufferSlice<T> {
+pub struct BufferSlice<T> {
+  buffer: RawBuffer,
+  ptr: *const T,
+}
+
+pub struct BufferSliceMut<T> {
   buffer: RawBuffer,
   ptr: *mut T,
 }
 
-unsafe impl<T> BufferSlice<T> for GL {
-  type SliceRepr = GLBufferSlice<T>;
+unsafe impl<T> BufferSliceBackend<T> for GL {
+  type SliceRepr = BufferSlice<T>;
+
+  type SliceMutRepr = BufferSliceMut<T>;
 
   unsafe fn slice_buffer(buffer: &Self::BufferRepr) -> Result<Self::SliceRepr, BufferError> {
     buffer
@@ -214,19 +220,19 @@ unsafe impl<T> BufferSlice<T> for GL {
       .borrow_mut()
       .bind_array_buffer(buffer.handle, Bind::Cached);
 
-    let ptr = gl::MapBuffer(gl::ARRAY_BUFFER, gl::READ_ONLY) as *mut T;
+    let ptr = gl::MapBuffer(gl::ARRAY_BUFFER, gl::READ_ONLY) as *const T;
     let buffer = buffer.clone();
 
     if ptr.is_null() {
       Err(BufferError::MapFailed)
     } else {
-      Ok(GLBufferSlice { buffer, ptr })
+      Ok(BufferSlice { buffer, ptr })
     }
   }
 
   unsafe fn slice_buffer_mut(
     buffer: &mut Self::BufferRepr,
-  ) -> Result<Self::SliceRepr, BufferError> {
+  ) -> Result<Self::SliceMutRepr, BufferError> {
     buffer
       .state
       .borrow_mut()
@@ -238,25 +244,33 @@ unsafe impl<T> BufferSlice<T> for GL {
     if ptr.is_null() {
       Err(BufferError::MapFailed)
     } else {
-      Ok(GLBufferSlice { buffer, ptr })
+      Ok(BufferSliceMut { buffer, ptr })
     }
   }
 
-  unsafe fn destroy_buffer_slice(slice: &mut Self::SliceRepr) -> Result<(), BufferError> {
+  unsafe fn destroy_buffer_slice(slice: &mut Self::SliceRepr) {
     slice
       .buffer
       .state
       .borrow_mut()
       .bind_array_buffer(slice.buffer.handle, Bind::Cached);
     gl::UnmapBuffer(gl::ARRAY_BUFFER);
-    Ok(())
+  }
+
+  unsafe fn destroy_buffer_slice_mut(slice: &mut Self::SliceMutRepr) {
+    slice
+      .buffer
+      .state
+      .borrow_mut()
+      .bind_array_buffer(slice.buffer.handle, Bind::Cached);
+    gl::UnmapBuffer(gl::ARRAY_BUFFER);
   }
 
   unsafe fn obtain_slice(slice: &Self::SliceRepr) -> Result<&[T], BufferError> {
     Ok(slice::from_raw_parts(slice.ptr, slice.buffer.len))
   }
 
-  unsafe fn obtain_slice_mut(slice: &mut Self::SliceRepr) -> Result<&mut [T], BufferError> {
+  unsafe fn obtain_slice_mut(slice: &mut Self::SliceMutRepr) -> Result<&mut [T], BufferError> {
     Ok(slice::from_raw_parts_mut(slice.ptr, slice.buffer.len))
   }
 }

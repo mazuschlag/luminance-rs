@@ -1,5 +1,6 @@
 //! Graphics state.
 
+use gl::types::*;
 use std::cell::RefCell;
 use std::fmt;
 use std::marker::PhantomData;
@@ -8,7 +9,6 @@ use crate::backend::gl::depth_test::depth_comparison_to_glenum;
 use crate::blending::{BlendingState, Equation, Factor};
 use crate::depth_test::{DepthComparison, DepthTest};
 use crate::face_culling::{FaceCullingMode, FaceCullingOrder, FaceCullingState};
-use crate::metagl::*;
 use crate::vertex_restart::VertexRestart;
 
 // TLS synchronization barrier for `GLState`.

@@ -99,14 +99,6 @@ pub trait Dimensionable {
   fn count(size: Self::Size) -> usize;
 }
 
-// Capacity of the dimension, which is the product of the width, height and depth.
-fn dim_capacity<D>(size: D::Size) -> u32
-where
-  D: Dimensionable,
-{
-  D::width(size) * D::height(size) * D::depth(size)
-}
-
 /// Dimension of a texture.
 #[derive(Clone, Copy, Debug)]
 pub enum Dim {
