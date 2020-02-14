@@ -1,7 +1,5 @@
 use gl::types::*;
 
-use crate::backend::framebuffer::Framebuffer as FramebufferBackend;
-use crate::backend::gl::framebuffer::Framebuffer;
 use crate::backend::gl::GL;
 use crate::backend::pipeline::{
   Pipeline as PipelineBackend, PipelineBase, PipelineError, PipelineState, Viewport,

@@ -1,7 +1,6 @@
 use crate::backend::framebuffer::Framebuffer as FramebufferBackend;
 use crate::backend::shading_gate::ShadingGate as ShadingGateBackend;
-use crate::backend::texture::{Dimensionable, Layerable, Texture};
-use crate::pixel::Pixel;
+use crate::backend::texture::{Dimensionable, Layerable};
 
 use std::fmt;
 

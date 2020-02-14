@@ -1,16 +1,13 @@
 use crate::api::framebuffer::Framebuffer;
 use crate::api::shading_gate::ShadingGate;
-use crate::api::texture::Texture;
 use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
 use crate::backend::framebuffer::Framebuffer as FramebufferBackend;
 use crate::backend::pipeline::{
   Bound as BoundBackend, Pipeline as PipelineBackend, PipelineBase, PipelineError, PipelineState,
-  Viewport,
 };
-use crate::backend::texture::{Dimensionable, Layerable, Texture as TextureBackend};
+use crate::backend::texture::{Dimensionable, Layerable};
 use crate::context::GraphicsContext;
-use crate::pixel::Pixel;
 
 use std::marker::PhantomData;
 

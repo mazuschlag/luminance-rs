@@ -9,7 +9,6 @@ use crate::backend::framebuffer::{
   Framebuffer as FramebufferBackend, FramebufferBackBuffer, FramebufferError, IncompleteReason,
 };
 use crate::backend::gl::state::{Bind, GLState};
-use crate::backend::gl::texture::opengl_target;
 use crate::backend::gl::GL;
 use crate::backend::texture::{Dim2, Dimensionable, Layerable, Sampler};
 
@@ -33,18 +32,16 @@ where
   unsafe fn new_framebuffer<CS, DS>(
     &mut self,
     size: D::Size,
-    mipmaps: usize,
-    sampler: &Sampler,
+    _: usize,
+    _: &Sampler,
   ) -> Result<Self::FramebufferRepr, FramebufferError>
   where
     CS: ColorSlot<Self, L, D>,
     DS: DepthSlot<Self, L, D>,
   {
-    let mipmaps = mipmaps + 1;
     let mut handle: GLuint = 0;
     let color_formats = CS::color_formats();
     let depth_format = DS::depth_format();
-    let target = opengl_target(L::layering(), D::dim());
     let mut depth_renderbuffer: Option<GLuint> = None;
 
     gl::GenFramebuffers(1, &mut handle);
@@ -72,8 +69,7 @@ where
     }
 
     // depth texture
-    if let Some(format) = depth_format {
-    } else {
+    if depth_format.is_none() {
       let mut renderbuffer: GLuint = 0;
 
       gl::GenRenderbuffers(1, &mut renderbuffer);
@@ -137,7 +133,7 @@ where
   }
 
   unsafe fn attach_depth_texture(
-    framebuffer: &mut Self::FramebufferRepr,
+    _: &mut Self::FramebufferRepr,
     texture: &Self::TextureRepr,
   ) -> Result<(), FramebufferError> {
     gl::FramebufferTexture(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, texture.handle, 0);
