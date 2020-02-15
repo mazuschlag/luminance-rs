@@ -34,10 +34,7 @@ where
     &mut self,
     framebuffer: &Self::FramebufferRepr,
     pipeline_state: &PipelineState,
-  ) where
-    L: Layerable,
-    D: Dimensionable,
-  {
+  ) {
     let mut state = self.state.borrow_mut();
 
     state.bind_draw_framebuffer(framebuffer.handle);

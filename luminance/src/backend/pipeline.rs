@@ -147,9 +147,7 @@ where
     &mut self,
     framebuffer: &Self::FramebufferRepr,
     pipeline_state: &PipelineState,
-  ) where
-    L: Layerable,
-    D: Dimensionable;
+  );
 }
 
 pub unsafe trait Bound<T>: PipelineBase {
