@@ -24,7 +24,7 @@ pub struct Pipeline {
 }
 
 pub struct BoundBuffer {
-  binding: u32,
+  pub(crate) binding: u32,
   state: Rc<RefCell<GLState>>,
 }
 
@@ -40,7 +40,7 @@ impl Drop for BoundBuffer {
 }
 
 pub struct BoundTexture {
-  unit: u32,
+  pub(crate) unit: u32,
   state: Rc<RefCell<GLState>>,
 }
 

@@ -110,7 +110,7 @@ pub struct BoundBuffer<'a, B, T>
 where
   B: PipelineBase,
 {
-  repr: B::BoundBufferRepr,
+  pub(crate) repr: B::BoundBufferRepr,
   _t: PhantomData<&'a T>,
 }
 
@@ -118,6 +118,6 @@ pub struct BoundTexture<'a, B, L, D, P>
 where
   B: PipelineBase,
 {
-  repr: B::BoundTextureRepr,
+  pub(crate) repr: B::BoundTextureRepr,
   _t: PhantomData<&'a (L, D, P)>,
 }
