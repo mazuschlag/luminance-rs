@@ -2,6 +2,7 @@ use crate::backend::buffer::BufferBase;
 use crate::backend::framebuffer::Framebuffer as FramebufferBackend;
 use crate::backend::shading_gate::ShadingGate as ShadingGateBackend;
 use crate::backend::texture::{Dimensionable, Layerable, TextureBase};
+use crate::pixel::Pixel;
 
 use std::fmt;
 
@@ -147,10 +148,14 @@ pub unsafe trait PipelineBase: ShadingGateBackend + BufferBase + TextureBase {
     buffer: &Self::BufferRepr,
   ) -> Result<Self::BoundBufferRepr, PipelineError>;
 
-  unsafe fn bind_texture(
+  unsafe fn bind_texture<L, D, P>(
     pipeline: &Self::PipelineRepr,
     texture: &Self::TextureRepr,
-  ) -> Result<Self::BoundTextureRepr, PipelineError>;
+  ) -> Result<Self::BoundTextureRepr, PipelineError>
+  where
+    L: Layerable,
+    D: Dimensionable,
+    P: Pixel;
 }
 
 pub unsafe trait Pipeline<L, D>: PipelineBase + FramebufferBackend<L, D>

@@ -200,6 +200,17 @@ impl<T> Uniform<T> {
   pub fn index(&self) -> i32 {
     self.index
   }
+
+  /// Change the type of a uniform.
+  ///
+  /// Allow to change the type of a uniform to present it as if it was representing another type.
+  /// This is useful when using proxy types.
+  pub(crate) fn retype<Q>(&self) -> Uniform<Q> {
+    Uniform {
+      index: self.index,
+      _t: PhantomData,
+    }
+  }
 }
 
 /// Type of a uniform.

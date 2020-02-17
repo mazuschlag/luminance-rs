@@ -13,6 +13,7 @@ use crate::backend::texture::{Dimensionable, Layerable};
 use crate::blending::BlendingState;
 use crate::depth_test::DepthTest;
 use crate::face_culling::FaceCullingState;
+use crate::pixel::Pixel;
 use crate::render_state::RenderState;
 
 use std::cell::RefCell;
@@ -89,10 +90,15 @@ unsafe impl PipelineBase for GL {
     })
   }
 
-  unsafe fn bind_texture(
+  unsafe fn bind_texture<L, D, P>(
     pipeline: &Self::PipelineRepr,
     texture: &Self::TextureRepr,
-  ) -> Result<Self::BoundTextureRepr, PipelineError> {
+  ) -> Result<Self::BoundTextureRepr, PipelineError>
+  where
+    L: Layerable,
+    D: Dimensionable,
+    P: Pixel,
+  {
     let mut state = pipeline.state.borrow_mut();
     let bstack = state.binding_stack_mut();
 

@@ -3,11 +3,16 @@
 use std::marker::PhantomData;
 use std::ops::Deref;
 
+use crate::api::pipeline::{BoundBuffer, BoundTexture};
+use crate::backend::buffer::BufferBase;
+use crate::backend::pipeline::PipelineBase;
 use crate::backend::shader::{
   ProgramError, ProgramWarning, Shader, StageError, StageType, TessellationStages, Uniform,
-  UniformWarning, Uniformable,
+  UniformType, UniformWarning, Uniformable,
 };
+use crate::backend::texture::{Dimensionable, Layerable, TextureBase};
 use crate::context::GraphicsContext;
+use crate::pixel::SamplerType;
 use crate::vertex::Semantics;
 
 pub struct Stage<S>
@@ -414,5 +419,39 @@ where
     Uni: UniformInterface<E>,
   {
     self.adapt_env(env)
+  }
+}
+
+// some “proxy” Uniformable impls for types coming from the current crate; those are needed so that
+// backend crates can implement Uniformable for their own types without having to need access to the
+// repr types
+unsafe impl<'a, B, T> Uniformable<B> for BoundBuffer<'a, B, T>
+where
+  B: PipelineBase + BufferBase,
+  B::BoundBufferRepr: Uniformable<B>,
+{
+  unsafe fn ty() -> UniformType {
+    <B::BoundBufferRepr as Uniformable<B>>::ty()
+  }
+
+  unsafe fn update(self, program: &mut B::ProgramRepr, uniform: &mut Uniform<Self>) {
+    <B::BoundBufferRepr as Uniformable<B>>::update(self.repr, program, &mut uniform.retype())
+  }
+}
+
+unsafe impl<'a, B, L, D, S> Uniformable<B> for BoundTexture<'a, B, L, D, S>
+where
+  B: PipelineBase + TextureBase,
+  B::BoundTextureRepr: Uniformable<B>,
+  L: Layerable,
+  D: Dimensionable,
+  S: SamplerType,
+{
+  unsafe fn ty() -> UniformType {
+    <B::BoundTextureRepr as Uniformable<B>>::ty()
+  }
+
+  unsafe fn update(self, program: &mut B::ProgramRepr, uniform: &mut Uniform<Self>) {
+    <B::BoundTextureRepr as Uniformable<B>>::update(self.repr, program, &mut uniform.retype())
   }
 }

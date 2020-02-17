@@ -11,7 +11,7 @@ use crate::backend::pipeline::{
 };
 use crate::backend::texture::{Dimensionable, Layerable, Texture as TextureBackend};
 use crate::context::GraphicsContext;
-use crate::pixel::Pixel;
+use crate::pixel::{Pixel, SamplerType};
 
 use std::marker::PhantomData;
 
@@ -90,7 +90,7 @@ where
   pub fn bind_texture<L, D, P>(
     &'a self,
     texture: &'a Texture<B, L, D, P>,
-  ) -> Result<BoundTexture<'a, B, L, D, P>, PipelineError>
+  ) -> Result<BoundTexture<'a, B, L, D, P::SamplerType>, PipelineError>
   where
     B: TextureBackend<L, D, P>,
     L: Layerable,
@@ -98,7 +98,7 @@ where
     P: Pixel,
   {
     unsafe {
-      B::bind_texture(&self.repr, &texture.repr).map(|repr| BoundTexture {
+      B::bind_texture::<L, D, P>(&self.repr, &texture.repr).map(|repr| BoundTexture {
         repr,
         _t: PhantomData,
       })
@@ -114,10 +114,13 @@ where
   _t: PhantomData<&'a T>,
 }
 
-pub struct BoundTexture<'a, B, L, D, P>
+pub struct BoundTexture<'a, B, L, D, S>
 where
   B: PipelineBase,
+  L: Layerable,
+  D: Dimensionable,
+  S: SamplerType,
 {
   pub(crate) repr: B::BoundTextureRepr,
-  _t: PhantomData<&'a (L, D, P)>,
+  _t: PhantomData<&'a (L, D, S)>,
 }
