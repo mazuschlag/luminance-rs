@@ -12,7 +12,7 @@ pub struct Buffer<S, T>
 where
   S: BufferBackend<T>,
 {
-  repr: S::BufferRepr,
+  pub(crate) repr: S::BufferRepr,
   _t: PhantomData<T>,
 }
 

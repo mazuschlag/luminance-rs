@@ -16,7 +16,8 @@ where
   P: Pixel,
 {
   pub(crate) repr: S::TextureRepr,
-  _p: PhantomData<*const P>,
+  size: D::Size,
+  _phantom: PhantomData<(*const L, *const P)>,
 }
 
 impl<S, L, D, P> Drop for Texture<S, L, D, P>
@@ -53,7 +54,8 @@ where
         .new_texture(size, mipmaps, sampler)
         .map(|repr| Texture {
           repr,
-          _p: PhantomData,
+          size,
+          _phantom: PhantomData,
         })
     }
   }
@@ -63,7 +65,7 @@ where
   }
 
   pub fn size(&self) -> D::Size {
-    unsafe { S::size(&self.repr) }
+    self.size
   }
 
   pub fn clear_part(
@@ -77,7 +79,7 @@ where
   }
 
   pub fn clear(&mut self, gen_mipmaps: GenMipmaps, pixel: P::Encoding) -> Result<(), TextureError> {
-    unsafe { S::clear(&mut self.repr, gen_mipmaps, pixel) }
+    unsafe { S::clear(&mut self.repr, gen_mipmaps, self.size, pixel) }
   }
 
   pub fn upload_part(
@@ -95,7 +97,7 @@ where
     gen_mipmaps: GenMipmaps,
     texels: &[P::Encoding],
   ) -> Result<(), TextureError> {
-    unsafe { S::upload(&mut self.repr, gen_mipmaps, texels) }
+    unsafe { S::upload(&mut self.repr, gen_mipmaps, self.size, texels) }
   }
 
   pub fn upload_part_raw(
@@ -113,13 +115,13 @@ where
     gen_mipmaps: GenMipmaps,
     texels: &[P::RawEncoding],
   ) -> Result<(), TextureError> {
-    unsafe { S::upload_raw(&mut self.repr, gen_mipmaps, texels) }
+    unsafe { S::upload_raw(&mut self.repr, gen_mipmaps, self.size, texels) }
   }
 
   pub fn get_raw_texels(&mut self) -> Result<Vec<P::RawEncoding>, TextureError>
   where
     P::RawEncoding: Copy + Default,
   {
-    unsafe { S::get_raw_texels(&mut self.repr) }
+    unsafe { S::get_raw_texels(&mut self.repr, self.size) }
   }
 }

@@ -406,15 +406,11 @@ impl fmt::Display for TextureError {
 }
 
 /// The base texture trait.
-pub unsafe trait TextureBase<L, D>
-where
-  D: Dimensionable,
-  L: Layerable,
-{
+pub unsafe trait TextureBase {
   type TextureRepr;
 }
 
-pub unsafe trait Texture<L, D, P>: TextureBase<L, D>
+pub unsafe trait Texture<L, D, P>: TextureBase
 where
   D: Dimensionable,
   L: Layerable,
@@ -431,8 +427,6 @@ where
 
   unsafe fn mipmaps(texture: &Self::TextureRepr) -> usize;
 
-  unsafe fn size(texture: &Self::TextureRepr) -> D::Size;
-
   unsafe fn clear_part(
     texture: &mut Self::TextureRepr,
     gen_mipmaps: GenMipmaps,
@@ -444,6 +438,7 @@ where
   unsafe fn clear(
     texture: &mut Self::TextureRepr,
     gen_mipmaps: GenMipmaps,
+    size: D::Size,
     pixel: P::Encoding,
   ) -> Result<(), TextureError>;
 
@@ -458,6 +453,7 @@ where
   unsafe fn upload(
     texture: &mut Self::TextureRepr,
     gen_mipmaps: GenMipmaps,
+    size: D::Size,
     texels: &[P::Encoding],
   ) -> Result<(), TextureError>;
 
@@ -472,11 +468,13 @@ where
   unsafe fn upload_raw(
     texture: &mut Self::TextureRepr,
     gen_mipmaps: GenMipmaps,
+    size: D::Size,
     texels: &[P::RawEncoding],
   ) -> Result<(), TextureError>;
 
   unsafe fn get_raw_texels(
     texture: &Self::TextureRepr,
+    size: D::Size,
   ) -> Result<Vec<P::RawEncoding>, TextureError>
   where
     P::RawEncoding: Copy + Default;

@@ -10,7 +10,7 @@ use std::ptr;
 use std::rc::Rc;
 use std::slice;
 
-use crate::backend::buffer::{Buffer, BufferError, BufferSlice as BufferSliceBackend};
+use crate::backend::buffer::{Buffer, BufferBase, BufferError, BufferSlice as BufferSliceBackend};
 use crate::backend::gl::state::{Bind, GLState};
 use crate::backend::gl::GL;
 
@@ -23,9 +23,11 @@ pub struct RawBuffer {
   state: Rc<RefCell<GLState>>,
 }
 
-unsafe impl<T> Buffer<T> for GL {
+unsafe impl BufferBase for GL {
   type BufferRepr = RawBuffer;
+}
 
+unsafe impl<T> Buffer<T> for GL {
   unsafe fn new_buffer(&mut self, len: usize) -> Result<Self::BufferRepr, BufferError> {
     let mut buffer: GLuint = 0;
     let bytes = mem::size_of::<T>() * len;

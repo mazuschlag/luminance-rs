@@ -16,23 +16,15 @@ use crate::backend::texture::{
 };
 use crate::pixel::{Pixel, PixelFormat};
 
-pub struct GLTexture<D>
-where
-  D: Dimensionable,
-{
+pub struct Texture {
   pub(crate) handle: GLuint, // handle to the GPU texture object
-  target: GLenum,            // “type” of the texture; used for bindings
-  size: D::Size,
+  pub(crate) target: GLenum, // “type” of the texture; used for bindings
   mipmaps: usize,
   state: Rc<RefCell<GLState>>,
 }
 
-unsafe impl<L, D> TextureBase<L, D> for GL
-where
-  D: Dimensionable,
-  L: Layerable,
-{
-  type TextureRepr = GLTexture<D>;
+unsafe impl TextureBase for GL {
+  type TextureRepr = Texture;
 }
 
 unsafe impl<L, D, P> TextureBackend<L, D, P> for GL
@@ -48,18 +40,18 @@ where
     sampler: Sampler,
   ) -> Result<Self::TextureRepr, TextureError> {
     let mipmaps = mipmaps + 1; // + 1 prevent having 0 mipmaps
-    let mut handle = 0;
     let target = opengl_target(L::layering(), D::dim());
 
-    gl::GenTextures(1, &mut handle);
-    self.state.borrow_mut().bind_texture(target, handle);
+    let mut state = self.state.borrow_mut();
+
+    let handle = state.generate_texture();
+    state.bind_texture(target, handle);
 
     create_texture::<L, D>(target, size, mipmaps, P::pixel_format(), sampler)?;
 
-    let texture = GLTexture {
+    let texture = Texture {
       handle,
       target,
-      size,
       mipmaps,
       state: self.state.clone(),
     };
@@ -73,10 +65,6 @@ where
 
   unsafe fn mipmaps(texture: &Self::TextureRepr) -> usize {
     texture.mipmaps
-  }
-
-  unsafe fn size(texture: &Self::TextureRepr) -> D::Size {
-    texture.size
   }
 
   unsafe fn clear_part(
@@ -98,15 +86,10 @@ where
   unsafe fn clear(
     texture: &mut Self::TextureRepr,
     gen_mipmaps: GenMipmaps,
+    size: D::Size,
     pixel: P::Encoding,
   ) -> Result<(), TextureError> {
-    <Self as TextureBackend<L, D, P>>::clear_part(
-      texture,
-      gen_mipmaps,
-      D::ZERO_OFFSET,
-      texture.size,
-      pixel,
-    )
+    <Self as TextureBackend<L, D, P>>::clear_part(texture, gen_mipmaps, D::ZERO_OFFSET, size, pixel)
   }
 
   unsafe fn upload_part(
@@ -134,13 +117,14 @@ where
   unsafe fn upload(
     texture: &mut Self::TextureRepr,
     gen_mipmaps: GenMipmaps,
+    size: D::Size,
     texels: &[P::Encoding],
   ) -> Result<(), TextureError> {
     <Self as TextureBackend<L, D, P>>::upload_part(
       texture,
       gen_mipmaps,
       D::ZERO_OFFSET,
-      texture.size,
+      size,
       texels,
     )
   }
@@ -170,18 +154,22 @@ where
   unsafe fn upload_raw(
     texture: &mut Self::TextureRepr,
     gen_mipmaps: GenMipmaps,
+    size: D::Size,
     texels: &[P::RawEncoding],
   ) -> Result<(), TextureError> {
     <Self as TextureBackend<L, D, P>>::upload_part_raw(
       texture,
       gen_mipmaps,
       D::ZERO_OFFSET,
-      texture.size,
+      size,
       texels,
     )
   }
 
-  unsafe fn get_raw_texels(texture: &Self::TextureRepr) -> Result<Vec<P::RawEncoding>, TextureError>
+  unsafe fn get_raw_texels(
+    texture: &Self::TextureRepr,
+    _: D::Size,
+  ) -> Result<Vec<P::RawEncoding>, TextureError>
   where
     P::RawEncoding: Copy + Default,
   {

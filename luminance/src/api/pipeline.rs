@@ -1,13 +1,17 @@
+use crate::api::buffer::Buffer;
 use crate::api::framebuffer::Framebuffer;
 use crate::api::shading_gate::ShadingGate;
+use crate::api::texture::Texture;
+use crate::backend::buffer::Buffer as BufferBackend;
 use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
 use crate::backend::framebuffer::Framebuffer as FramebufferBackend;
 use crate::backend::pipeline::{
-  Bound as BoundBackend, Pipeline as PipelineBackend, PipelineBase, PipelineError, PipelineState,
+  Pipeline as PipelineBackend, PipelineBase, PipelineError, PipelineState,
 };
-use crate::backend::texture::{Dimensionable, Layerable};
+use crate::backend::texture::{Dimensionable, Layerable, Texture as TextureBackend};
 use crate::context::GraphicsContext;
+use crate::pixel::Pixel;
 
 use std::marker::PhantomData;
 
@@ -68,12 +72,33 @@ impl<'a, B> Pipeline<'a, B>
 where
   B: PipelineBase,
 {
-  pub fn bind<T>(&'a self, resource: &'a T) -> Result<Bound<'a, B, T>, PipelineError>
+  pub fn bind_buffer<T>(
+    &'a self,
+    buffer: &'a Buffer<B, T>,
+  ) -> Result<BoundBuffer<'a, B, T>, PipelineError>
   where
-    B: BoundBackend<T>,
+    B: BufferBackend<T>,
   {
     unsafe {
-      B::bind_resource(&self.repr, resource).map(|repr| Bound {
+      B::bind_buffer(&self.repr, &buffer.repr).map(|repr| BoundBuffer {
+        repr,
+        _t: PhantomData,
+      })
+    }
+  }
+
+  pub fn bind_texture<L, D, P>(
+    &'a self,
+    texture: &'a Texture<B, L, D, P>,
+  ) -> Result<BoundTexture<'a, B, L, D, P>, PipelineError>
+  where
+    B: TextureBackend<L, D, P>,
+    L: Layerable,
+    D: Dimensionable,
+    P: Pixel,
+  {
+    unsafe {
+      B::bind_texture(&self.repr, &texture.repr).map(|repr| BoundTexture {
         repr,
         _t: PhantomData,
       })
@@ -81,10 +106,18 @@ where
   }
 }
 
-pub struct Bound<'a, B, T>
+pub struct BoundBuffer<'a, B, T>
 where
-  B: PipelineBase + BoundBackend<T>,
+  B: PipelineBase,
 {
-  repr: B::BoundRepr,
+  repr: B::BoundBufferRepr,
   _t: PhantomData<&'a T>,
+}
+
+pub struct BoundTexture<'a, B, L, D, P>
+where
+  B: PipelineBase,
+{
+  repr: B::BoundTextureRepr,
+  _t: PhantomData<&'a (L, D, P)>,
 }

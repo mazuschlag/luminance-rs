@@ -6,13 +6,12 @@ use std::fmt;
 
 use crate::linear::{M22, M33, M44};
 
-/// Buffer backend.
-///
-/// You want to implement that trait on your backend type to support buffers.
-pub unsafe trait Buffer<T> {
+pub unsafe trait BufferBase {
   /// The inner representation of the buffer for this backend.
   type BufferRepr;
+}
 
+pub unsafe trait Buffer<T>: BufferBase {
   /// Create a new buffer with a given number of uninitialized elements.
   unsafe fn new_buffer(&mut self, len: usize) -> Result<Self::BufferRepr, BufferError>;
 

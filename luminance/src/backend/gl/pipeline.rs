@@ -1,5 +1,6 @@
 use gl::types::*;
 
+use crate::backend::gl::state::GLState;
 use crate::backend::gl::GL;
 use crate::backend::pipeline::{
   Pipeline as PipelineBackend, PipelineBase, PipelineError, PipelineState, Viewport,
@@ -14,14 +15,101 @@ use crate::depth_test::DepthTest;
 use crate::face_culling::FaceCullingState;
 use crate::render_state::RenderState;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 #[non_exhaustive]
-pub struct Pipeline;
+pub struct Pipeline {
+  state: Rc<RefCell<GLState>>,
+}
+
+pub struct BoundBuffer {
+  binding: u32,
+  state: Rc<RefCell<GLState>>,
+}
+
+impl Drop for BoundBuffer {
+  fn drop(&mut self) {
+    // place the binding into the free list
+    let mut state = self.state.borrow_mut();
+    state
+      .binding_stack_mut()
+      .free_buffer_bindings
+      .push(self.binding);
+  }
+}
+
+pub struct BoundTexture {
+  unit: u32,
+  state: Rc<RefCell<GLState>>,
+}
+
+impl Drop for BoundTexture {
+  fn drop(&mut self) {
+    // place the binding into the free list
+    let mut state = self.state.borrow_mut();
+    state.binding_stack_mut().free_texture_units.push(self.unit);
+  }
+}
 
 unsafe impl PipelineBase for GL {
   type PipelineRepr = Pipeline;
 
+  type BoundBufferRepr = BoundBuffer;
+
+  type BoundTextureRepr = BoundTexture;
+
   unsafe fn new_pipeline(&mut self) -> Result<Self::PipelineRepr, PipelineError> {
-    Ok(Pipeline)
+    let pipeline = Pipeline {
+      state: self.state.clone(),
+    };
+
+    Ok(pipeline)
+  }
+
+  unsafe fn bind_buffer(
+    pipeline: &Self::PipelineRepr,
+    buffer: &Self::BufferRepr,
+  ) -> Result<Self::BoundBufferRepr, PipelineError> {
+    let mut state = pipeline.state.borrow_mut();
+    let bstack = state.binding_stack_mut();
+
+    let binding = bstack.free_buffer_bindings.pop().unwrap_or_else(|| {
+      // no more free bindings; reserve one
+      let binding = bstack.next_buffer_binding;
+      bstack.next_buffer_binding += 1;
+      binding
+    });
+
+    state.bind_buffer_base(buffer.handle, binding);
+
+    Ok(BoundBuffer {
+      binding,
+      state: pipeline.state.clone(),
+    })
+  }
+
+  unsafe fn bind_texture(
+    pipeline: &Self::PipelineRepr,
+    texture: &Self::TextureRepr,
+  ) -> Result<Self::BoundTextureRepr, PipelineError> {
+    let mut state = pipeline.state.borrow_mut();
+    let bstack = state.binding_stack_mut();
+
+    let unit = bstack.free_texture_units.pop().unwrap_or_else(|| {
+      // no more free units; reserve one
+      let unit = bstack.next_texture_unit;
+      bstack.next_texture_unit += 1;
+      unit
+    });
+
+    state.set_texture_unit(unit);
+    state.bind_texture(texture.target, texture.handle);
+
+    Ok(BoundTexture {
+      unit,
+      state: pipeline.state.clone(),
+    })
   }
 }
 

@@ -17,10 +17,10 @@ use crate::vertex_restart::VertexRestart;
 thread_local!(static TLS_ACQUIRE_GFX_STATE: RefCell<Option<()>> = RefCell::new(Some(())));
 
 pub struct BindingStack {
-  next_texture_unit: u32,
-  free_texture_units: Vec<u32>,
-  next_buffer_binding: u32,
-  free_buffer_bindings: Vec<u32>,
+  pub(crate) next_texture_unit: u32,
+  pub(crate) free_texture_units: Vec<u32>,
+  pub(crate) next_buffer_binding: u32,
+  pub(crate) free_buffer_bindings: Vec<u32>,
 }
 
 impl BindingStack {
@@ -182,6 +182,10 @@ impl GLState {
         srgb_framebuffer_enabled,
       })
     }
+  }
+
+  pub(crate) fn binding_stack_mut(&mut self) -> &mut BindingStack {
+    &mut self.binding_stack
   }
 
   pub(crate) fn generate_texture(&mut self) -> GLuint {
