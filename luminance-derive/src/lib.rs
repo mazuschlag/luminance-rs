@@ -150,7 +150,7 @@ pub fn derive_semantics(input: TokenStream) -> TokenStream {
 /// The procedural macro is very simple to use. You declare a struct as you would normally do:
 ///
 /// ```
-/// # use luminance::shader::program::Uniform;
+/// # use luminance::backend::shader::Uniform;
 /// # use luminance_derive::UniformInterface;
 ///
 /// #[derive(Debug, UniformInterface)]
@@ -171,7 +171,7 @@ pub fn derive_semantics(input: TokenStream) -> TokenStream {
 /// attribute:
 ///
 /// ```
-/// # use luminance::shader::program::Uniform;
+/// # use luminance::backend::shader::Uniform;
 /// # use luminance_derive::UniformInterface;
 ///
 /// #[derive(Debug, UniformInterface)]
@@ -187,7 +187,7 @@ pub fn derive_semantics(input: TokenStream) -> TokenStream {
 /// to be complete:
 ///
 /// ```
-/// # use luminance::shader::program::Uniform;
+/// # use luminance::backend::shader::Uniform;
 /// # use luminance_derive::UniformInterface;
 ///
 /// #[derive(Debug, UniformInterface)]
@@ -202,7 +202,7 @@ pub fn derive_semantics(input: TokenStream) -> TokenStream {
 /// uniform if it cannot be mapped:
 ///
 /// ```
-/// # use luminance::shader::program::Uniform;
+/// # use luminance::backend::shader::Uniform;
 /// # use luminance_derive::UniformInterface;
 ///
 /// #[derive(Debug, UniformInterface)]

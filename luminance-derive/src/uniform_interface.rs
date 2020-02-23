@@ -2,7 +2,7 @@ use crate::attrib::{get_field_attr_once, get_field_flag_once, AttrError};
 use proc_macro::TokenStream;
 use quote::quote;
 use std::fmt;
-use syn::{DataStruct, Fields, Ident};
+use syn::{DataStruct, Fields, Ident, Path, PathArguments, Type, TypePath};
 
 // accepted sub keys for the "vertex" key
 const KNOWN_SUBKEYS: &[&str] = &["name", "unbound"];
@@ -13,6 +13,7 @@ pub(crate) enum DeriveUniformInterfaceError {
   UnsupportedUnit,
   UnboundError(AttrError),
   NameError(AttrError),
+  IncorrectlyWrappedType(Type),
 }
 
 impl fmt::Display for DeriveUniformInterfaceError {
@@ -22,6 +23,11 @@ impl fmt::Display for DeriveUniformInterfaceError {
       DeriveUniformInterfaceError::UnsupportedUnit => f.write_str("unsupported unit struct"),
       DeriveUniformInterfaceError::UnboundError(ref e) => write!(f, "unbound error: {}", e),
       DeriveUniformInterfaceError::NameError(ref e) => write!(f, "name error: {}", e),
+      DeriveUniformInterfaceError::IncorrectlyWrappedType(ref t) => write!(
+        f,
+        "incorrectly wrapped uniform type: {:?} (should be Uniform<YourTypeHere>)",
+        t
+      ),
     }
   }
 }
@@ -37,6 +43,8 @@ pub(crate) fn generate_uniform_interface_impl(
       let mut field_decls = Vec::new();
       // collect field names to return the uniform interface with the shortcut syntax
       let mut field_names = Vec::new();
+      // collect field types so that we can implement UniformInterface<S> where $t: Uniform<S>
+      let mut field_where_clause = Vec::new();
 
       for field in named_fields.named {
         let field_ident = field.ident.unwrap();
@@ -62,26 +70,36 @@ pub(crate) fn generate_uniform_interface_impl(
         // renaming
         let build_call = if unbound {
           quote! {
-            builder.ask_unbound(#name)
+            builder.ask_or_unbound(#name)
           }
         } else {
           quote! {
-            builder.ask(#name).map_err(luminance::shader::program::ProgramError::UniformWarning)?
+            builder.ask(#name)?
           }
         };
 
+        let field_ty = extract_uniform_type(&field.ty).ok_or(
+          DeriveUniformInterfaceError::IncorrectlyWrappedType(field.ty),
+        )?;
         field_names.push(field_ident.clone());
         field_decls.push(quote! {
           let #field_ident = #build_call;
         });
+        field_where_clause.push(quote! {
+          #field_ty: luminance::backend::shader::Uniformable<S>
+        });
       }
 
       let output = quote! {
-        impl luminance::shader::program::UniformInterface for #ident {
-          fn uniform_interface(
-            builder: &mut luminance::shader::program::UniformBuilder,
-            _: ()
-          ) -> Result<Self, luminance::shader::program::ProgramError> {
+        impl<S> luminance::api::shader::UniformInterface<S> for #ident
+        where
+          S: ?Sized + luminance::backend::shader::Shader,
+          #(#field_where_clause),*,
+        {
+          fn uniform_interface<'a>(
+            builder: &mut luminance::api::shader::UniformBuilder<'a, S>,
+            _: &mut ()
+          ) -> Result<Self, luminance::backend::shader::UniformWarning> {
             #(#field_decls)*
 
             let iface = #ident { #(#field_names,)* };
@@ -95,5 +113,25 @@ pub(crate) fn generate_uniform_interface_impl(
 
     Fields::Unnamed(_) => Err(DeriveUniformInterfaceError::UnsupportedUnnamed),
     Fields::Unit => Err(DeriveUniformInterfaceError::UnsupportedUnit),
+  }
+}
+
+// extract the type T in Uniform<T>
+fn extract_uniform_type(ty: &Type) -> Option<proc_macro2::TokenStream> {
+  if let Type::Path(TypePath {
+    path: Path { ref segments, .. },
+    ..
+  }) = ty
+  {
+    let segment = segments.first()?;
+
+    if let PathArguments::AngleBracketed(ref bracketed_args) = segment.arguments {
+      let sub = bracketed_args.args.first()?;
+      Some(quote! { #sub })
+    } else {
+      None
+    }
+  } else {
+    None
   }
 }

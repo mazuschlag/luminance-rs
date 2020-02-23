@@ -181,6 +181,7 @@ impl From<VertexAttribWarning> for ProgramWarning {
   }
 }
 
+#[derive(Debug)]
 pub struct Uniform<T>
 where
   T: ?Sized,

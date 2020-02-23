@@ -21,7 +21,7 @@ where
   where
     P: AsMut<Program<C::Backend, Sem, Out, Uni>>,
     Sem: Semantics,
-    Uni: UniformInterface,
+    Uni: UniformInterface<C::Backend>,
     F: for<'b> FnOnce(ProgramInterface<'b, C::Backend, Uni>, RenderGate<'b, C>),
   {
     let program = program.as_mut();

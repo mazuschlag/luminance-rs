@@ -84,23 +84,24 @@ where
   }
 }
 
-pub trait UniformInterface<E = ()>: Sized {
-  fn uniform_interface<'a, S>(
+pub trait UniformInterface<S, E = ()>: Sized
+where
+  S: ?Sized + Shader,
+{
+  fn uniform_interface<'a>(
     builder: &mut UniformBuilder<'a, S>,
     env: &mut E,
-  ) -> Result<Self, UniformWarning>
-  where
-    S: ?Sized + Shader;
+  ) -> Result<Self, UniformWarning>;
 }
 
-impl UniformInterface for () {
-  fn uniform_interface<'a, S>(
+impl<S, E> UniformInterface<S, E> for ()
+where
+  S: ?Sized + Shader,
+{
+  fn uniform_interface<'a>(
     _: &mut UniformBuilder<'a, S>,
-    _: &mut (),
-  ) -> Result<Self, UniformWarning>
-  where
-    S: ?Sized + Shader,
-  {
+    _: &mut E,
+  ) -> Result<Self, UniformWarning> {
     Ok(())
   }
 }
@@ -221,7 +222,7 @@ where
   ) -> Result<BuiltProgram<S, Sem, Out, Uni>, ProgramError>
   where
     C: GraphicsContext<Backend = S>,
-    Uni: UniformInterface<E>,
+    Uni: UniformInterface<S, E>,
     T: Into<Option<TessellationStages<'a, Stage<S>>>>,
     G: Into<Option<&'a Stage<S>>>,
   {
@@ -274,7 +275,7 @@ where
   ) -> Result<BuiltProgram<S, Sem, Out, Uni>, ProgramError>
   where
     C: GraphicsContext<Backend = S>,
-    Uni: UniformInterface,
+    Uni: UniformInterface<S>,
     T: for<'a> Into<Option<TessellationStages<'a, Stage<S>>>>,
     G: for<'a> Into<Option<&'a Stage<S>>>,
   {
@@ -291,7 +292,7 @@ where
   ) -> Result<BuiltProgram<S, Sem, Out, Uni>, ProgramError>
   where
     C: GraphicsContext<Backend = S>,
-    Uni: UniformInterface<E>,
+    Uni: UniformInterface<S, E>,
     V: AsRef<str> + 'a,
     T: Into<Option<TessellationStages<'a, str>>>,
     G: Into<Option<&'a str>>,
@@ -345,7 +346,7 @@ where
   ) -> Result<BuiltProgram<S, Sem, Out, Uni>, ProgramError>
   where
     C: GraphicsContext<Backend = S>,
-    Uni: UniformInterface,
+    Uni: UniformInterface<S>,
     V: AsRef<str> + 'a,
     T: Into<Option<TessellationStages<'a, str>>>,
     G: Into<Option<&'a str>>,
@@ -356,7 +357,7 @@ where
 
   pub fn adapt<Q>(self) -> Result<BuiltProgram<S, Sem, Out, Q>, AdaptationFailure<S, Sem, Out, Uni>>
   where
-    Q: UniformInterface,
+    Q: UniformInterface<S>,
   {
     self.adapt_env(&mut ())
   }
@@ -366,7 +367,7 @@ where
     env: &mut E,
   ) -> Result<BuiltProgram<S, Sem, Out, Q>, AdaptationFailure<S, Sem, Out, Uni>>
   where
-    Q: UniformInterface<E>,
+    Q: UniformInterface<S, E>,
   {
     // first, try to create the new uniform interface
     let mut uniform_builder: UniformBuilder<S> =
@@ -415,7 +416,7 @@ where
     env: &mut E,
   ) -> Result<BuiltProgram<S, Sem, Out, Uni>, AdaptationFailure<S, Sem, Out, Uni>>
   where
-    Uni: UniformInterface<E>,
+    Uni: UniformInterface<S, E>,
   {
     self.adapt_env(env)
   }
