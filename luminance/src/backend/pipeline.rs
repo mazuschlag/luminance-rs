@@ -1,7 +1,7 @@
-use crate::backend::buffer::BufferBase;
+use crate::backend::buffer::Buffer;
 use crate::backend::framebuffer::Framebuffer as FramebufferBackend;
 use crate::backend::shading_gate::ShadingGate as ShadingGateBackend;
-use crate::backend::texture::{Dimensionable, Layerable, TextureBase};
+use crate::backend::texture::{Dimensionable, Layerable, Texture, TextureBase};
 use crate::pixel::Pixel;
 
 use std::fmt;
@@ -134,28 +134,10 @@ impl PipelineState {
   }
 }
 
-pub unsafe trait PipelineBase: ShadingGateBackend + BufferBase + TextureBase {
+pub unsafe trait PipelineBase: ShadingGateBackend + TextureBase {
   type PipelineRepr;
 
-  type BoundBufferRepr;
-
-  type BoundTextureRepr;
-
   unsafe fn new_pipeline(&mut self) -> Result<Self::PipelineRepr, PipelineError>;
-
-  unsafe fn bind_buffer(
-    pipeline: &Self::PipelineRepr,
-    buffer: &Self::BufferRepr,
-  ) -> Result<Self::BoundBufferRepr, PipelineError>;
-
-  unsafe fn bind_texture<L, D, P>(
-    pipeline: &Self::PipelineRepr,
-    texture: &Self::TextureRepr,
-  ) -> Result<Self::BoundTextureRepr, PipelineError>
-  where
-    L: Layerable,
-    D: Dimensionable,
-    P: Pixel;
 }
 
 pub unsafe trait Pipeline<L, D>: PipelineBase + FramebufferBackend<L, D>
@@ -168,4 +150,31 @@ where
     framebuffer: &Self::FramebufferRepr,
     pipeline_state: &PipelineState,
   );
+}
+
+pub unsafe trait PipelineBuffer<T>: PipelineBase + Buffer<T> {
+  type BoundBufferRepr;
+
+  unsafe fn bind_buffer(
+    pipeline: &Self::PipelineRepr,
+    buffer: &Self::BufferRepr,
+  ) -> Result<Self::BoundBufferRepr, PipelineError>;
+}
+
+pub unsafe trait PipelineTexture<L, D, P>: PipelineBase + Texture<L, D, P>
+where
+  L: Layerable,
+  D: Dimensionable,
+  P: Pixel,
+{
+  type BoundTextureRepr;
+
+  unsafe fn bind_texture(
+    pipeline: &Self::PipelineRepr,
+    texture: &Self::TextureRepr,
+  ) -> Result<Self::BoundTextureRepr, PipelineError>
+  where
+    L: Layerable,
+    D: Dimensionable,
+    P: Pixel;
 }

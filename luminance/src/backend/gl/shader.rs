@@ -11,7 +11,7 @@ use crate::backend::shader::{
 };
 use crate::backend::texture::{Dim, Dimensionable, Layerable};
 use crate::linear::{M22, M33, M44};
-use crate::pixel::{SamplerType, Type as PixelType};
+use crate::pixel::{Pixel, SamplerType as _, Type as PixelType};
 use crate::vertex::Semantics;
 
 #[derive(Debug)]
@@ -640,41 +640,41 @@ unsafe impl Uniformable<GL> for BoundBuffer {
   }
 }
 
-// unsafe impl Uniformable<GL> for BoundTexture<'a, GL, L, D, S>
-// where
-//   L: Layerable,
-//   D: Dimensionable,
-//   S: SamplerType,
-// {
-//   unsafe fn ty() -> UniformType {
-//     match (S::sample_type(), D::dim()) {
-//       (PixelType::NormIntegral, Dim::Dim1) => UniformType::Sampler1D,
-//       (PixelType::NormUnsigned, Dim::Dim1) => UniformType::Sampler1D,
-//       (PixelType::Integral, Dim::Dim1) => UniformType::ISampler1D,
-//       (PixelType::Unsigned, Dim::Dim1) => UniformType::UISampler1D,
-//       (PixelType::Floating, Dim::Dim1) => UniformType::Sampler1D,
-//
-//       (PixelType::NormIntegral, Dim::Dim2) => UniformType::Sampler2D,
-//       (PixelType::NormUnsigned, Dim::Dim2) => UniformType::Sampler2D,
-//       (PixelType::Integral, Dim::Dim2) => UniformType::ISampler2D,
-//       (PixelType::Unsigned, Dim::Dim2) => UniformType::UISampler2D,
-//       (PixelType::Floating, Dim::Dim2) => UniformType::Sampler2D,
-//
-//       (PixelType::NormIntegral, Dim::Dim3) => UniformType::Sampler3D,
-//       (PixelType::NormUnsigned, Dim::Dim3) => UniformType::Sampler3D,
-//       (PixelType::Integral, Dim::Dim3) => UniformType::ISampler3D,
-//       (PixelType::Unsigned, Dim::Dim3) => UniformType::UISampler3D,
-//       (PixelType::Floating, Dim::Dim3) => UniformType::Sampler3D,
-//
-//       (PixelType::NormIntegral, Dim::Cubemap) => UniformType::Cubemap,
-//       (PixelType::NormUnsigned, Dim::Cubemap) => UniformType::Cubemap,
-//       (PixelType::Integral, Dim::Cubemap) => UniformType::ICubemap,
-//       (PixelType::Unsigned, Dim::Cubemap) => UniformType::UICubemap,
-//       (PixelType::Floating, Dim::Cubemap) => UniformType::Cubemap,
-//     }
-//   }
-//
-//   unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
-//     gl::Uniform1i(uniform.index(), self.repr.unit as GLint)
-//   }
-// }
+unsafe impl<L, D, P> Uniformable<GL> for BoundTexture<L, D, P>
+where
+  L: Layerable,
+  D: Dimensionable,
+  P: Pixel,
+{
+  unsafe fn ty() -> UniformType {
+    match (P::SamplerType::sample_type(), D::dim()) {
+      (PixelType::NormIntegral, Dim::Dim1) => UniformType::Sampler1D,
+      (PixelType::NormUnsigned, Dim::Dim1) => UniformType::Sampler1D,
+      (PixelType::Integral, Dim::Dim1) => UniformType::ISampler1D,
+      (PixelType::Unsigned, Dim::Dim1) => UniformType::UISampler1D,
+      (PixelType::Floating, Dim::Dim1) => UniformType::Sampler1D,
+
+      (PixelType::NormIntegral, Dim::Dim2) => UniformType::Sampler2D,
+      (PixelType::NormUnsigned, Dim::Dim2) => UniformType::Sampler2D,
+      (PixelType::Integral, Dim::Dim2) => UniformType::ISampler2D,
+      (PixelType::Unsigned, Dim::Dim2) => UniformType::UISampler2D,
+      (PixelType::Floating, Dim::Dim2) => UniformType::Sampler2D,
+
+      (PixelType::NormIntegral, Dim::Dim3) => UniformType::Sampler3D,
+      (PixelType::NormUnsigned, Dim::Dim3) => UniformType::Sampler3D,
+      (PixelType::Integral, Dim::Dim3) => UniformType::ISampler3D,
+      (PixelType::Unsigned, Dim::Dim3) => UniformType::UISampler3D,
+      (PixelType::Floating, Dim::Dim3) => UniformType::Sampler3D,
+
+      (PixelType::NormIntegral, Dim::Cubemap) => UniformType::Cubemap,
+      (PixelType::NormUnsigned, Dim::Cubemap) => UniformType::Cubemap,
+      (PixelType::Integral, Dim::Cubemap) => UniformType::ICubemap,
+      (PixelType::Unsigned, Dim::Cubemap) => UniformType::UICubemap,
+      (PixelType::Floating, Dim::Cubemap) => UniformType::Cubemap,
+    }
+  }
+
+  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+    gl::Uniform1i(uniform.index(), self.unit as GLint)
+  }
+}

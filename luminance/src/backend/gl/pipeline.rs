@@ -3,7 +3,8 @@ use gl::types::*;
 use crate::backend::gl::state::GLState;
 use crate::backend::gl::GL;
 use crate::backend::pipeline::{
-  Pipeline as PipelineBackend, PipelineBase, PipelineError, PipelineState, Viewport,
+  Pipeline as PipelineBackend, PipelineBase, PipelineBuffer, PipelineError, PipelineState,
+  PipelineTexture, Viewport,
 };
 use crate::backend::render_gate::RenderGate;
 use crate::backend::shading_gate::ShadingGate;
@@ -17,6 +18,7 @@ use crate::pixel::Pixel;
 use crate::render_state::RenderState;
 
 use std::cell::RefCell;
+use std::marker::PhantomData;
 use std::rc::Rc;
 
 #[non_exhaustive]
@@ -40,12 +42,23 @@ impl Drop for BoundBuffer {
   }
 }
 
-pub struct BoundTexture {
+pub struct BoundTexture<L, D, P>
+where
+  L: Layerable,
+  D: Dimensionable,
+  P: Pixel,
+{
   pub(crate) unit: u32,
   state: Rc<RefCell<GLState>>,
+  _phantom: PhantomData<*const (L, D, P)>,
 }
 
-impl Drop for BoundTexture {
+impl<L, D, P> Drop for BoundTexture<L, D, P>
+where
+  L: Layerable,
+  D: Dimensionable,
+  P: Pixel,
+{
   fn drop(&mut self) {
     // place the binding into the free list
     let mut state = self.state.borrow_mut();
@@ -56,66 +69,12 @@ impl Drop for BoundTexture {
 unsafe impl PipelineBase for GL {
   type PipelineRepr = Pipeline;
 
-  type BoundBufferRepr = BoundBuffer;
-
-  type BoundTextureRepr = BoundTexture;
-
   unsafe fn new_pipeline(&mut self) -> Result<Self::PipelineRepr, PipelineError> {
     let pipeline = Pipeline {
       state: self.state.clone(),
     };
 
     Ok(pipeline)
-  }
-
-  unsafe fn bind_buffer(
-    pipeline: &Self::PipelineRepr,
-    buffer: &Self::BufferRepr,
-  ) -> Result<Self::BoundBufferRepr, PipelineError> {
-    let mut state = pipeline.state.borrow_mut();
-    let bstack = state.binding_stack_mut();
-
-    let binding = bstack.free_buffer_bindings.pop().unwrap_or_else(|| {
-      // no more free bindings; reserve one
-      let binding = bstack.next_buffer_binding;
-      bstack.next_buffer_binding += 1;
-      binding
-    });
-
-    state.bind_buffer_base(buffer.handle, binding);
-
-    Ok(BoundBuffer {
-      binding,
-      state: pipeline.state.clone(),
-    })
-  }
-
-  unsafe fn bind_texture<L, D, P>(
-    pipeline: &Self::PipelineRepr,
-    texture: &Self::TextureRepr,
-  ) -> Result<Self::BoundTextureRepr, PipelineError>
-  where
-    L: Layerable,
-    D: Dimensionable,
-    P: Pixel,
-  {
-    let mut state = pipeline.state.borrow_mut();
-    let bstack = state.binding_stack_mut();
-
-    let unit = bstack.free_texture_units.pop().unwrap_or_else(|| {
-      // no more free units; reserve one
-      let unit = bstack.next_texture_unit;
-      bstack.next_texture_unit += 1;
-      unit
-    });
-
-    state.set_texture_unit(unit);
-    state.bind_texture(texture.target, texture.handle);
-
-    Ok(BoundTexture {
-      unit,
-      state: pipeline.state.clone(),
-    })
   }
 }
 
@@ -179,6 +138,70 @@ where
     }
 
     state.enable_srgb_framebuffer(srgb_enabled);
+  }
+}
+
+unsafe impl<T> PipelineBuffer<T> for GL {
+  type BoundBufferRepr = BoundBuffer;
+
+  unsafe fn bind_buffer(
+    pipeline: &Self::PipelineRepr,
+    buffer: &Self::BufferRepr,
+  ) -> Result<Self::BoundBufferRepr, PipelineError> {
+    let mut state = pipeline.state.borrow_mut();
+    let bstack = state.binding_stack_mut();
+
+    let binding = bstack.free_buffer_bindings.pop().unwrap_or_else(|| {
+      // no more free bindings; reserve one
+      let binding = bstack.next_buffer_binding;
+      bstack.next_buffer_binding += 1;
+      binding
+    });
+
+    state.bind_buffer_base(buffer.handle, binding);
+
+    Ok(BoundBuffer {
+      binding,
+      state: pipeline.state.clone(),
+    })
+  }
+}
+
+unsafe impl<L, D, P> PipelineTexture<L, D, P> for GL
+where
+  L: Layerable,
+  D: Dimensionable,
+  P: Pixel,
+{
+  type BoundTextureRepr = BoundTexture<L, D, P>;
+
+  unsafe fn bind_texture(
+    pipeline: &Self::PipelineRepr,
+    texture: &Self::TextureRepr,
+  ) -> Result<Self::BoundTextureRepr, PipelineError>
+  where
+    L: Layerable,
+    D: Dimensionable,
+    P: Pixel,
+  {
+    let mut state = pipeline.state.borrow_mut();
+    let bstack = state.binding_stack_mut();
+
+    let unit = bstack.free_texture_units.pop().unwrap_or_else(|| {
+      // no more free units; reserve one
+      let unit = bstack.next_texture_unit;
+      bstack.next_texture_unit += 1;
+      unit
+    });
+
+    state.set_texture_unit(unit);
+    state.bind_texture(texture.target, texture.handle);
+
+    Ok(BoundTexture {
+      unit,
+      state: pipeline.state.clone(),
+      _phantom: PhantomData,
+    })
   }
 }
 

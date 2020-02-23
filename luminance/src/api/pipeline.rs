@@ -2,18 +2,26 @@ use crate::api::buffer::Buffer;
 use crate::api::framebuffer::Framebuffer;
 use crate::api::shading_gate::ShadingGate;
 use crate::api::texture::Texture;
-use crate::backend::buffer::Buffer as BufferBackend;
 use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
 use crate::backend::framebuffer::Framebuffer as FramebufferBackend;
 use crate::backend::pipeline::{
-  Pipeline as PipelineBackend, PipelineBase, PipelineError, PipelineState,
+  Pipeline as PipelineBackend, PipelineBase, PipelineBuffer, PipelineError, PipelineState,
+  PipelineTexture,
 };
-use crate::backend::texture::{Dimensionable, Layerable, Texture as TextureBackend};
+use crate::backend::texture::{Dimensionable, Layerable};
 use crate::context::GraphicsContext;
-use crate::pixel::{Pixel, SamplerType};
+use crate::pixel::Pixel;
 
 use std::marker::PhantomData;
+
+pub struct Pipeline<'a, B>
+where
+  B: ?Sized + PipelineBase,
+{
+  repr: B::PipelineRepr,
+  _phantom: PhantomData<&'a mut ()>,
+}
 
 pub struct PipelineGate<'a, C>
 where
@@ -50,7 +58,7 @@ where
     let pipeline = unsafe {
       self.ctx.backend().new_pipeline().map(|repr| Pipeline {
         repr,
-        _a: PhantomData,
+        _phantom: PhantomData,
       })?
     };
     let shading_gate = ShadingGate { ctx: self.ctx };
@@ -60,12 +68,23 @@ where
   }
 }
 
-pub struct Pipeline<'a, B>
+pub struct BoundBuffer<'a, B, T>
 where
-  B: ?Sized + PipelineBase,
+  B: PipelineBuffer<T>,
 {
-  repr: B::PipelineRepr,
-  _a: PhantomData<&'a mut ()>,
+  pub(crate) repr: B::BoundBufferRepr,
+  _phantom: PhantomData<&'a T>,
+}
+
+pub struct BoundTexture<'a, B, L, D, P>
+where
+  B: PipelineTexture<L, D, P>,
+  L: Layerable,
+  D: Dimensionable,
+  P: Pixel,
+{
+  pub(crate) repr: B::BoundTextureRepr,
+  _phantom: PhantomData<&'a ()>,
 }
 
 impl<'a, B> Pipeline<'a, B>
@@ -77,12 +96,12 @@ where
     buffer: &'a Buffer<B, T>,
   ) -> Result<BoundBuffer<'a, B, T>, PipelineError>
   where
-    B: BufferBackend<T>,
+    B: PipelineBuffer<T>,
   {
     unsafe {
       B::bind_buffer(&self.repr, &buffer.repr).map(|repr| BoundBuffer {
         repr,
-        _t: PhantomData,
+        _phantom: PhantomData,
       })
     }
   }
@@ -90,37 +109,18 @@ where
   pub fn bind_texture<L, D, P>(
     &'a self,
     texture: &'a Texture<B, L, D, P>,
-  ) -> Result<BoundTexture<'a, B, L, D, P::SamplerType>, PipelineError>
+  ) -> Result<BoundTexture<'a, B, L, D, P>, PipelineError>
   where
-    B: TextureBackend<L, D, P>,
+    B: PipelineTexture<L, D, P>,
     L: Layerable,
     D: Dimensionable,
     P: Pixel,
   {
     unsafe {
-      B::bind_texture::<L, D, P>(&self.repr, &texture.repr).map(|repr| BoundTexture {
+      B::bind_texture(&self.repr, &texture.repr).map(|repr| BoundTexture {
         repr,
-        _t: PhantomData,
+        _phantom: PhantomData,
       })
     }
   }
-}
-
-pub struct BoundBuffer<'a, B, T>
-where
-  B: PipelineBase,
-{
-  pub(crate) repr: B::BoundBufferRepr,
-  _t: PhantomData<&'a T>,
-}
-
-pub struct BoundTexture<'a, B, L, D, S>
-where
-  B: PipelineBase,
-  L: Layerable,
-  D: Dimensionable,
-  S: SamplerType,
-{
-  pub(crate) repr: B::BoundTextureRepr,
-  _t: PhantomData<&'a (L, D, S)>,
 }
