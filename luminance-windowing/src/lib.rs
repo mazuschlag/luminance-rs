@@ -24,7 +24,7 @@ pub enum WindowDim {
     /// Width of the window.
     width: u32,
     /// Height of the window.
-    heigth: u32,
+    height: u32,
   },
 }
 

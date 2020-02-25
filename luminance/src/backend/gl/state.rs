@@ -16,7 +16,7 @@ use crate::vertex_restart::VertexRestart;
 // Note: disable on no_std.
 thread_local!(static TLS_ACQUIRE_GFX_STATE: RefCell<Option<()>> = RefCell::new(Some(())));
 
-pub struct BindingStack {
+pub(crate) struct BindingStack {
   pub(crate) next_texture_unit: u32,
   pub(crate) free_texture_units: Vec<u32>,
   pub(crate) next_buffer_binding: u32,
@@ -113,7 +113,7 @@ impl GLState {
   /// > Note: keep in mind you can create only one per thread. However, if you’re building without
   /// > standard library, this function will always return successfully. You have to take extra care
   /// > in this case.
-  pub fn new() -> Result<Self, StateQueryError> {
+  pub(crate) fn new() -> Result<Self, StateQueryError> {
     TLS_ACQUIRE_GFX_STATE.with(|rc| {
       let mut inner = rc.borrow_mut();
 
@@ -129,7 +129,7 @@ impl GLState {
   }
 
   /// Get a `GraphicsContext` from the current OpenGL context.
-  pub(crate) fn get_from_context() -> Result<Self, StateQueryError> {
+  fn get_from_context() -> Result<Self, StateQueryError> {
     unsafe {
       let binding_stack = BindingStack::new();
       let viewport = get_ctx_viewport()?;
