@@ -186,14 +186,14 @@ fn main() {
       width: 960,
       height: 540,
     },
-    "Hello, world!",
+    "Hello, world; from OpenGL 3.3!",
     WindowOpt::default(),
   )
   .expect("GLFW surface creation");
 
   // We need a program to “shade” our triangles and to tell luminance which is the input vertex
   // type, and we’re not interested in the other two type variables for this sample.
-  let program = Program::<_, Semantics, (), ()>::from_strings(&mut surface, VS, None, None, FS)
+  let mut program = Program::<_, Semantics, (), ()>::from_strings(&mut surface, VS, None, None, FS)
     .expect("program creation")
     .ignore_warnings();
 
@@ -270,33 +270,37 @@ fn main() {
       resize = false;
     }
 
-    // // Create a new dynamic pipeline that will render to the back buffer and must clear it with
-    // // pitch black prior to do any render to it.
-    // surface.pipeline_builder().pipeline(
-    //   &back_buffer,
-    //   &PipelineState::default(),
-    //   |_, mut shd_gate| {
-    //     // Start shading with our program.
-    //     shd_gate.shade(&program, |_, mut rdr_gate| {
-    //       // Start rendering things with the default render state provided by luminance.
-    //       rdr_gate.render(&RenderState::default(), |mut tess_gate| {
-    //         // Pick the right tessellation to use depending on the mode chosen.
-    //         let tess = match demo {
-    //           TessMethod::Direct => &direct_triangles,
-    //           TessMethod::Indexed => &indexed_triangles,
-    //           TessMethod::DirectDeinterleaved => &direct_deinterleaved_triangles,
-    //           TessMethod::IndexedDeinterleaved => &indexed_deinterleaved_triangles,
-    //         };
+    // Create a new dynamic pipeline that will render to the back buffer and must clear it with
+    // pitch black prior to do any render to it.
+    let render = surface.pipeline_gate().pipeline(
+      &back_buffer,
+      &PipelineState::default(),
+      |_, mut shd_gate| {
+        // Start shading with our program.
+        shd_gate.shade(&mut program, |_, mut rdr_gate| {
+          // Start rendering things with the default render state provided by luminance.
+          rdr_gate.render(&RenderState::default(), |mut tess_gate| {
+            // Pick the right tessellation to use depending on the mode chosen.
+            let tess = match demo {
+              TessMethod::Direct => &direct_triangles,
+              TessMethod::Indexed => &indexed_triangles,
+              TessMethod::DirectDeinterleaved => &direct_deinterleaved_triangles,
+              TessMethod::IndexedDeinterleaved => &indexed_deinterleaved_triangles,
+            };
 
-    //         // Render the tessellation to the surface.
-    //         tess_gate.render(tess);
-    //       });
-    //     });
-    //   },
-    // );
+            // Render the tessellation to the surface.
+            tess_gate.render(tess);
+          });
+        });
+      },
+    );
 
     // Finally, swap the backbuffer with the frontbuffer in order to render our triangles onto your
     // screen.
-    surface.window.swap_buffers();
+    if render.is_ok() {
+      surface.window.swap_buffers();
+    } else {
+      break 'app;
+    }
   }
 }

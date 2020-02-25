@@ -15,13 +15,12 @@ where
   C: ?Sized + GraphicsContext,
   C::Backend: RenderGateBackend,
 {
-  pub fn render<'b, R, F>(&'b mut self, rdr_st: R, f: F)
+  pub fn render<'b, F>(&'b mut self, rdr_st: &RenderState, f: F)
   where
-    R: AsRef<RenderState>,
     F: FnOnce(TessGate<'b, C>),
   {
     unsafe {
-      self.ctx.backend().enter_render_state(rdr_st.as_ref());
+      self.ctx.backend().enter_render_state(rdr_st);
     }
 
     let tess_gate = TessGate { ctx: self.ctx };

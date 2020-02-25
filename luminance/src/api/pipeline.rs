@@ -34,6 +34,10 @@ impl<'a, C> PipelineGate<'a, C>
 where
   C: ?Sized + GraphicsContext,
 {
+  pub fn new(ctx: &'a mut C) -> Self {
+    PipelineGate { ctx }
+  }
+
   pub fn pipeline<L, D, CS, DS, F>(
     &mut self,
     framebuffer: &Framebuffer<C::Backend, L, D, CS, DS>,

@@ -17,15 +17,12 @@ where
   C: ?Sized + GraphicsContext,
   C::Backend: ShadingGateBackend,
 {
-  pub fn shade<Sem, Out, Uni, P, F>(&mut self, mut program: P, f: F)
+  pub fn shade<Sem, Out, Uni, F>(&mut self, program: &mut Program<C::Backend, Sem, Out, Uni>, f: F)
   where
-    P: AsMut<Program<C::Backend, Sem, Out, Uni>>,
     Sem: Semantics,
     Uni: UniformInterface<C::Backend>,
     F: for<'b> FnOnce(ProgramInterface<'b, C::Backend, Uni>, RenderGate<'b, C>),
   {
-    let program = program.as_mut();
-
     unsafe {
       self.ctx.backend().apply_shader_program(&mut program.repr);
     }

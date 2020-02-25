@@ -21,7 +21,7 @@
 //! dynamic branches in the implementation and reduce the number of required safety
 //! checks – enforced at compile time instead.
 
-//use crate::pipeline::Builder;
+use crate::api::pipeline::PipelineGate;
 
 /// Class of graphics context.
 ///
@@ -32,11 +32,8 @@ pub unsafe trait GraphicsContext {
 
   fn backend(&mut self) -> &mut Self::Backend;
 
-  // /// Create a new pipeline builder.
-  // ///
-  // /// A pipeline builder is the only way to create new pipelines and issue draws. Feel free to dig
-  // /// in the documentation of `Builder` for further details.
-  // fn pipeline_builder(&mut self) -> Builder<Self> {
-  //   Builder::new(self)
-  // }
+  /// Create a new pipeline gate
+  fn pipeline_gate(&mut self) -> PipelineGate<Self> {
+    PipelineGate::new(self)
+  }
 }
