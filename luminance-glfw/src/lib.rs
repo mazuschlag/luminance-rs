@@ -5,8 +5,11 @@
 
 use gl;
 use glfw::{self, Context, CursorMode as GlfwCursorMode, SwapInterval, Window, WindowMode};
+use luminance::api::framebuffer::Framebuffer;
+use luminance::backend::framebuffer::FramebufferError;
 pub use luminance::backend::gl::state::StateQueryError;
 use luminance::backend::gl::GL;
+use luminance::backend::texture::{Dim2, Flat};
 use luminance::context::GraphicsContext;
 pub use luminance_windowing::{CursorMode, WindowDim, WindowOpt};
 use std::fmt;
@@ -138,6 +141,12 @@ impl GlfwSurface {
     };
 
     Ok(surface)
+  }
+
+  /// Get the back buffer.
+  pub fn back_buffer(&mut self) -> Result<Framebuffer<GL, Flat, Dim2, (), ()>, FramebufferError> {
+    let (w, h) = self.window.get_framebuffer_size();
+    Framebuffer::back_buffer(self, [w as u32, h as u32])
   }
 }
 

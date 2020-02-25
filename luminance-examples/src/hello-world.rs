@@ -8,13 +8,16 @@
 //!
 //! https://docs.rs/luminance
 
+use glfw::{Action, Context as _, Key, WindowEvent};
+use luminance::api::shader::Program;
+use luminance::api::tess::TessBuilder;
+use luminance::backend::pipeline::PipelineState;
+use luminance::backend::tess::Mode;
 use luminance::context::GraphicsContext as _;
-use luminance::pipeline::PipelineState;
 use luminance::render_state::RenderState;
-use luminance::shader::program::Program;
-use luminance::tess::{Mode, TessBuilder};
 use luminance_derive::{Semantics, Vertex};
-use luminance_glfw::{Action, GlfwSurface, Key, Surface, WindowDim, WindowEvent, WindowOpt};
+use luminance_glfw::GlfwSurface;
+use luminance_windowing::{WindowDim, WindowOpt};
 
 // We get the shader at compile time from local files
 const VS: &'static str = include_str!("simple-vs.glsl");
@@ -178,8 +181,11 @@ impl TessMethod {
 
 fn main() {
   // First thing first: we create a new surface to render to and get events from.
-  let mut surface = GlfwSurface::new(
-    WindowDim::Windowed(960, 540),
+  let mut surface = GlfwSurface::new_gl33(
+    WindowDim::Windowed {
+      width: 960,
+      height: 540,
+    },
     "Hello, world!",
     WindowOpt::default(),
   )
@@ -187,48 +193,48 @@ fn main() {
 
   // We need a program to “shade” our triangles and to tell luminance which is the input vertex
   // type, and we’re not interested in the other two type variables for this sample.
-  let program = Program::<Semantics, (), ()>::from_strings(None, VS, None, FS)
+  let program = Program::<_, Semantics, (), ()>::from_strings(&mut surface, VS, None, None, FS)
     .expect("program creation")
     .ignore_warnings();
 
   // Create tessellation for direct geometry; that is, tessellation that will render vertices by
   // taking one after another in the provided slice.
   let direct_triangles = TessBuilder::new(&mut surface)
-    .add_vertices(TRI_VERTICES)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(TRI_VERTICES))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   // Create indexed tessellation; that is, the vertices will be picked by using the indexes provided
   // by the second slice and this indexes will reference the first slice (useful not to duplicate
   // vertices on more complex objects than just two triangles).
   let indexed_triangles = TessBuilder::new(&mut surface)
-    .add_vertices(TRI_VERTICES)
-    .set_indices(TRI_INDICES)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(TRI_VERTICES))
+    .and_then(|b| b.set_indices(TRI_INDICES))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   // Create direct, deinterleaved tesselations; such tessellations allow to separate vertex
   // attributes in several contiguous regions of memory.
   let direct_deinterleaved_triangles = TessBuilder::new(&mut surface)
-    .add_vertices(TRI_DEINT_POS_VERTICES)
-    .add_vertices(TRI_DEINT_COLOR_VERTICES)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(TRI_DEINT_POS_VERTICES))
+    .and_then(|b| b.add_vertices(TRI_DEINT_COLOR_VERTICES))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   // Create indexed, deinterleaved tessellations; have your cake and fucking eat it, now.
   let indexed_deinterleaved_triangles = TessBuilder::new(&mut surface)
-    .add_vertices(TRI_DEINT_POS_VERTICES)
-    .add_vertices(TRI_DEINT_COLOR_VERTICES)
-    .set_indices(TRI_INDICES)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(TRI_DEINT_POS_VERTICES))
+    .and_then(|b| b.add_vertices(TRI_DEINT_COLOR_VERTICES))
+    .and_then(|b| b.set_indices(TRI_INDICES))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
-  // The back buffer, which we will make our render into (we make it mutable so that we can change
-  // it whenever the window dimensions change).
+  //// The back buffer, which we will make our render into (we make it mutable so that we can change
+  //// it whenever the window dimensions change).
   let mut back_buffer = surface.back_buffer().unwrap();
   let mut demo = TessMethod::Direct;
   let mut resize = false;
@@ -237,7 +243,8 @@ fn main() {
 
   'app: loop {
     // For all the events on the surface.
-    for event in surface.poll_events() {
+    surface.window.glfw.poll_events();
+    for (_, event) in surface.events_rx.try_iter() {
       match event {
         // If we close the window or press escape, quit the main loop (i.e. quit the application).
         WindowEvent::Close | WindowEvent::Key(Key::Escape, _, Action::Release, _) => break 'app,
@@ -260,37 +267,36 @@ fn main() {
     if resize {
       // Simply ask another backbuffer at the right dimension (no allocation / reallocation).
       back_buffer = surface.back_buffer().unwrap();
-      surface.back_buffer().unwrap();
       resize = false;
     }
 
-    // Create a new dynamic pipeline that will render to the back buffer and must clear it with
-    // pitch black prior to do any render to it.
-    surface.pipeline_builder().pipeline(
-      &back_buffer,
-      &PipelineState::default(),
-      |_, mut shd_gate| {
-        // Start shading with our program.
-        shd_gate.shade(&program, |_, mut rdr_gate| {
-          // Start rendering things with the default render state provided by luminance.
-          rdr_gate.render(&RenderState::default(), |mut tess_gate| {
-            // Pick the right tessellation to use depending on the mode chosen.
-            let tess = match demo {
-              TessMethod::Direct => &direct_triangles,
-              TessMethod::Indexed => &indexed_triangles,
-              TessMethod::DirectDeinterleaved => &direct_deinterleaved_triangles,
-              TessMethod::IndexedDeinterleaved => &indexed_deinterleaved_triangles,
-            };
+    // // Create a new dynamic pipeline that will render to the back buffer and must clear it with
+    // // pitch black prior to do any render to it.
+    // surface.pipeline_builder().pipeline(
+    //   &back_buffer,
+    //   &PipelineState::default(),
+    //   |_, mut shd_gate| {
+    //     // Start shading with our program.
+    //     shd_gate.shade(&program, |_, mut rdr_gate| {
+    //       // Start rendering things with the default render state provided by luminance.
+    //       rdr_gate.render(&RenderState::default(), |mut tess_gate| {
+    //         // Pick the right tessellation to use depending on the mode chosen.
+    //         let tess = match demo {
+    //           TessMethod::Direct => &direct_triangles,
+    //           TessMethod::Indexed => &indexed_triangles,
+    //           TessMethod::DirectDeinterleaved => &direct_deinterleaved_triangles,
+    //           TessMethod::IndexedDeinterleaved => &indexed_deinterleaved_triangles,
+    //         };
 
-            // Render the tessellation to the surface.
-            tess_gate.render(tess);
-          });
-        });
-      },
-    );
+    //         // Render the tessellation to the surface.
+    //         tess_gate.render(tess);
+    //       });
+    //     });
+    //   },
+    // );
 
     // Finally, swap the backbuffer with the frontbuffer in order to render our triangles onto your
     // screen.
-    surface.swap_buffers();
+    surface.window.swap_buffers();
   }
 }
