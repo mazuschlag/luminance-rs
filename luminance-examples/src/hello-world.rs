@@ -9,12 +9,12 @@
 //! https://docs.rs/luminance
 
 use glfw::{Action, Context as _, Key, WindowEvent};
-use luminance::api::shader::Program;
-use luminance::api::tess::TessBuilder;
 use luminance::backend::pipeline::PipelineState;
 use luminance::backend::tess::Mode;
 use luminance::context::GraphicsContext as _;
 use luminance::render_state::RenderState;
+use luminance::shader::Program;
+use luminance::tess::TessBuilder;
 use luminance_derive::{Semantics, Vertex};
 use luminance_glfw::GlfwSurface;
 use luminance_windowing::{WindowDim, WindowOpt};

@@ -21,7 +21,7 @@
 //! dynamic branches in the implementation and reduce the number of required safety
 //! checks – enforced at compile time instead.
 
-use crate::api::pipeline::PipelineGate;
+use crate::pipeline::PipelineGate;
 
 /// Class of graphics context.
 ///

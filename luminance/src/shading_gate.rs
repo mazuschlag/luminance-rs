@@ -1,7 +1,7 @@
-use crate::api::render_gate::RenderGate;
-use crate::api::shader::{Program, ProgramInterface, UniformInterface};
 use crate::backend::shading_gate::ShadingGate as ShadingGateBackend;
 use crate::context::GraphicsContext;
+use crate::render_gate::RenderGate;
+use crate::shader::{Program, ProgramInterface, UniformInterface};
 use crate::vertex::Semantics;
 
 pub struct ShadingGate<'a, C>

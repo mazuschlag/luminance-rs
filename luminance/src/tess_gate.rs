@@ -1,6 +1,6 @@
-use crate::api::tess::TessView;
 use crate::backend::tess_gate::TessGate as TessGateBackend;
 use crate::context::GraphicsContext;
+use crate::tess::TessView;
 
 pub struct TessGate<'a, C>
 where

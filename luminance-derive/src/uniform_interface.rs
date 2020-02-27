@@ -91,13 +91,13 @@ pub(crate) fn generate_uniform_interface_impl(
       }
 
       let output = quote! {
-        impl<S> luminance::api::shader::UniformInterface<S> for #ident
+        impl<S> luminance::shader::UniformInterface<S> for #ident
         where
           S: ?Sized + luminance::backend::shader::Shader,
           #(#field_where_clause),*,
         {
           fn uniform_interface<'a>(
-            builder: &mut luminance::api::shader::UniformBuilder<'a, S>,
+            builder: &mut luminance::shader::UniformBuilder<'a, S>,
             _: &mut ()
           ) -> Result<Self, luminance::backend::shader::UniformWarning> {
             #(#field_decls)*

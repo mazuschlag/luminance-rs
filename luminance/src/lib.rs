@@ -395,14 +395,22 @@
 
 // #![deny(missing_docs)]
 
-pub mod api;
 pub mod backend;
 pub mod blending;
+pub mod buffer;
 pub mod context;
 pub mod depth_test;
 pub mod face_culling;
+pub mod framebuffer;
 pub mod linear;
+pub mod pipeline;
 pub mod pixel;
+pub mod render_gate;
 pub mod render_state;
+pub mod shader;
+pub mod shading_gate;
+pub mod tess;
+pub mod tess_gate;
+pub mod texture;
 pub mod vertex;
 pub mod vertex_restart;

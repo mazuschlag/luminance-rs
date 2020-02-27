@@ -1,7 +1,7 @@
-use crate::api::tess_gate::TessGate;
 use crate::backend::render_gate::RenderGate as RenderGateBackend;
 use crate::context::GraphicsContext;
 use crate::render_state::RenderState;
+use crate::tess_gate::TessGate;
 
 pub struct RenderGate<'a, C>
 where

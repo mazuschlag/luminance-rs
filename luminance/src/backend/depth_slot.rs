@@ -3,7 +3,7 @@ use crate::backend::texture::{Dimensionable, Layerable, Sampler, Texture as Text
 use crate::context::GraphicsContext;
 use crate::pixel::{DepthPixel, PixelFormat};
 
-use crate::api::texture::Texture;
+use crate::texture::Texture;
 
 pub trait DepthSlot<B, L, D>
 where
