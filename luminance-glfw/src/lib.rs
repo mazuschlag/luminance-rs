@@ -5,12 +5,12 @@
 
 use gl;
 use glfw::{self, Context, CursorMode as GlfwCursorMode, SwapInterval, Window, WindowMode};
-use luminance::backend::framebuffer::FramebufferError;
 pub use luminance::backend::gl::state::StateQueryError;
 use luminance::backend::gl::GL;
-use luminance::backend::texture::{Dim2, Flat};
 use luminance::context::GraphicsContext;
 use luminance::framebuffer::Framebuffer;
+use luminance::framebuffer::FramebufferError;
+use luminance::texture::{Dim2, Flat};
 pub use luminance_windowing::{CursorMode, WindowDim, WindowOpt};
 use std::fmt;
 use std::os::raw::c_void;

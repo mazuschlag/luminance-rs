@@ -1,11 +1,10 @@
 //! Buffer API.
 
-use std::marker::PhantomData;
-
-use crate::backend::buffer::{
-  Buffer as BufferBackend, BufferError, BufferSlice as BufferSliceBackend,
-};
+use crate::backend::buffer::{Buffer as BufferBackend, BufferSlice as BufferSliceBackend};
 use crate::context::GraphicsContext;
+
+use std::fmt;
+use std::marker::PhantomData;
 
 #[derive(Debug)]
 pub struct Buffer<S, T>
@@ -120,6 +119,66 @@ where
         slice,
         _a: PhantomData,
       })
+    }
+  }
+}
+
+/// Buffer errors.
+#[derive(Debug, Eq, PartialEq)]
+pub enum BufferError {
+  /// Overflow when setting a value with a specific index.
+  ///
+  /// Contains the index and the size of the buffer.
+  Overflow { index: usize, buffer_len: usize },
+
+  /// Too few values were passed to fill a buffer.
+  ///
+  /// Contains the number of passed value and the size of the buffer.
+  TooFewValues {
+    provided_len: usize,
+    buffer_len: usize,
+  },
+
+  /// Too many values were passed to fill a buffer.
+  ///
+  /// Contains the number of passed value and the size of the buffer.
+  TooManyValues {
+    provided_len: usize,
+    buffer_len: usize,
+  },
+
+  /// Mapping the buffer failed.
+  MapFailed,
+}
+
+impl fmt::Display for BufferError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    match *self {
+      BufferError::Overflow { index, buffer_len } => write!(
+        f,
+        "buffer overflow (index = {}, size = {})",
+        index, buffer_len
+      ),
+
+      BufferError::TooFewValues {
+        provided_len,
+        buffer_len,
+      } => write!(
+        f,
+        "too few values passed to the buffer (nb = {}, size = {})",
+        provided_len, buffer_len
+      ),
+
+      BufferError::TooManyValues {
+        provided_len,
+        buffer_len,
+      } => write!(
+        f,
+        "too many values passed to the buffer (nb = {}, size = {})",
+        provided_len, buffer_len
+      ),
+
+      BufferError::MapFailed => write!(f, "buffer mapping failed"),
     }
   }
 }

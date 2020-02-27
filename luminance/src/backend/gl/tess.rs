@@ -9,10 +9,8 @@ use crate::backend::buffer::{Buffer as _, BufferSlice as BufferSliceBackend};
 use crate::backend::gl::buffer::{BufferSlice, BufferSliceMut, RawBuffer};
 use crate::backend::gl::state::{Bind, GLState};
 use crate::backend::gl::GL;
-use crate::backend::tess::{
-  Mode, Tess as TessBackend, TessBuilder as TessBuilderBackend, TessError, TessIndex,
-  TessIndexType, TessMapError, TessSlice,
-};
+use crate::backend::tess::{Tess as TessBackend, TessBuilder as TessBuilderBackend, TessSlice};
+use crate::tess::{Mode, TessError, TessIndex, TessIndexType, TessMapError};
 use crate::vertex::{
   Normalized, Vertex, VertexAttribDesc, VertexAttribDim, VertexAttribType, VertexBufferDesc,
   VertexDesc, VertexInstancing,

@@ -3,19 +3,19 @@ use gl::types::*;
 use crate::backend::gl::state::GLState;
 use crate::backend::gl::GL;
 use crate::backend::pipeline::{
-  Pipeline as PipelineBackend, PipelineBase, PipelineBuffer, PipelineError, PipelineState,
-  PipelineTexture, Viewport,
+  Pipeline as PipelineBackend, PipelineBase, PipelineBuffer, PipelineTexture,
 };
 use crate::backend::render_gate::RenderGate;
 use crate::backend::shading_gate::ShadingGate;
 use crate::backend::tess::Tess;
 use crate::backend::tess_gate::TessGate;
-use crate::backend::texture::{Dimensionable, Layerable};
 use crate::blending::BlendingState;
 use crate::depth_test::DepthTest;
 use crate::face_culling::FaceCullingState;
+use crate::pipeline::{PipelineError, PipelineState, Viewport};
 use crate::pixel::Pixel;
 use crate::render_state::RenderState;
+use crate::texture::{Dimensionable, Layerable};
 
 use std::cell::RefCell;
 use std::marker::PhantomData;

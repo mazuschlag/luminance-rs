@@ -5,13 +5,14 @@ use std::ptr::{null, null_mut};
 
 use crate::backend::gl::pipeline::{BoundBuffer, BoundTexture};
 use crate::backend::gl::GL;
-use crate::backend::shader::{
-  ProgramError, Shader, StageError, StageType, TessellationStages, Uniform, UniformType,
-  UniformWarning, Uniformable, VertexAttribWarning,
-};
-use crate::backend::texture::{Dim, Dimensionable, Layerable};
+use crate::backend::shader::{Shader, Uniformable};
 use crate::linear::{M22, M33, M44};
 use crate::pixel::{Pixel, SamplerType as _, Type as PixelType};
+use crate::shader::{
+  ProgramError, StageError, StageType, TessellationStages, Uniform, UniformType, UniformWarning,
+  VertexAttribWarning,
+};
+use crate::texture::{Dim, Dimensionable, Layerable};
 use crate::vertex::Semantics;
 
 #[derive(Debug)]

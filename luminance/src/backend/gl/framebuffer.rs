@@ -5,12 +5,11 @@ use std::rc::Rc;
 
 use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
-use crate::backend::framebuffer::{
-  Framebuffer as FramebufferBackend, FramebufferBackBuffer, FramebufferError, IncompleteReason,
-};
+use crate::backend::framebuffer::{Framebuffer as FramebufferBackend, FramebufferBackBuffer};
 use crate::backend::gl::state::{Bind, GLState};
 use crate::backend::gl::GL;
-use crate::backend::texture::{Dim2, Dimensionable, Layerable, Sampler};
+use crate::framebuffer::{FramebufferError, IncompleteReason};
+use crate::texture::{Dim2, Dimensionable, Layerable, Sampler};
 
 pub struct Framebuffer<D>
 where

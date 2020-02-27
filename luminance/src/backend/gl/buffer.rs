@@ -10,9 +10,10 @@ use std::ptr;
 use std::rc::Rc;
 use std::slice;
 
-use crate::backend::buffer::{Buffer, BufferBase, BufferError, BufferSlice as BufferSliceBackend};
+use crate::backend::buffer::{Buffer, BufferBase, BufferSlice as BufferSliceBackend};
 use crate::backend::gl::state::{Bind, GLState};
 use crate::backend::gl::GL;
+use crate::buffer::BufferError;
 
 /// OpenGL buffer.
 #[derive(Clone)]

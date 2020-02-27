@@ -10,11 +10,12 @@ use crate::backend::gl::depth_test::depth_comparison_to_glenum;
 use crate::backend::gl::pixel::opengl_pixel_format;
 use crate::backend::gl::state::GLState;
 use crate::backend::gl::GL;
-use crate::backend::texture::{
-  Dim, Dimensionable, GenMipmaps, Layerable, Layering, MagFilter, MinFilter, Sampler,
-  Texture as TextureBackend, TextureBase, TextureError, Wrap,
-};
+use crate::backend::texture::{Texture as TextureBackend, TextureBase};
 use crate::pixel::{Pixel, PixelFormat};
+use crate::texture::{
+  Dim, Dimensionable, GenMipmaps, Layerable, Layering, MagFilter, MinFilter, Sampler, TextureError,
+  Wrap,
+};
 
 pub struct Texture {
   pub(crate) handle: GLuint, // handle to the GPU texture object
