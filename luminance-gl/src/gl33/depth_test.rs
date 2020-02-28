@@ -1,6 +1,6 @@
 use gl::types::*;
 
-use crate::depth_test::DepthComparison;
+use luminance::depth_test::DepthComparison;
 
 pub(crate) fn depth_comparison_to_glenum(dc: DepthComparison) -> GLenum {
   match dc {

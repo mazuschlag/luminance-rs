@@ -12,15 +12,6 @@
 //! [`Equation`]: crate::blending::Equation
 //! [`Factor`]: crate::blending::Factor
 
-/// Whether or not enable blending.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub(crate) enum BlendingState {
-  /// Enable blending.
-  On,
-  /// Disable blending.
-  Off,
-}
-
 /// Blending equation. Used to state how blending factors and pixel data should be blended.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Equation {

@@ -3,13 +3,13 @@ use gl::types::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::backend::color_slot::ColorSlot;
-use crate::backend::depth_slot::DepthSlot;
-use crate::backend::framebuffer::{Framebuffer as FramebufferBackend, FramebufferBackBuffer};
-use crate::backend::gl::state::{Bind, GLState};
-use crate::backend::gl::GL;
-use crate::framebuffer::{FramebufferError, IncompleteReason};
-use crate::texture::{Dim2, Dimensionable, Layerable, Sampler};
+use crate::gl33::state::{Bind, GLState};
+use crate::gl33::GL33;
+use luminance::backend::color_slot::ColorSlot;
+use luminance::backend::depth_slot::DepthSlot;
+use luminance::backend::framebuffer::{Framebuffer as FramebufferBackend, FramebufferBackBuffer};
+use luminance::framebuffer::{FramebufferError, IncompleteReason};
+use luminance::texture::{Dim2, Dimensionable, Layerable, Sampler};
 
 pub struct Framebuffer<D>
 where
@@ -21,7 +21,7 @@ where
   state: Rc<RefCell<GLState>>,
 }
 
-unsafe impl<L, D> FramebufferBackend<L, D> for GL
+unsafe impl<L, D> FramebufferBackend<L, D> for GL33
 where
   L: Layerable,
   D: Dimensionable,
@@ -173,7 +173,7 @@ fn get_framebuffer_status() -> Result<(), IncompleteReason> {
   }
 }
 
-unsafe impl FramebufferBackBuffer for GL {
+unsafe impl FramebufferBackBuffer for GL33 {
   unsafe fn back_buffer(
     &mut self,
     size: <Dim2 as Dimensionable>::Size,

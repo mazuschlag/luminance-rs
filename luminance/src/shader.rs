@@ -198,7 +198,7 @@ where
 }
 
 impl<T> Uniform<T> {
-  pub(crate) fn new(index: i32) -> Self {
+  pub unsafe fn new(index: i32) -> Self {
     Uniform {
       index,
       _t: PhantomData,

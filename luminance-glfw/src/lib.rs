@@ -5,12 +5,12 @@
 
 use gl;
 use glfw::{self, Context, CursorMode as GlfwCursorMode, SwapInterval, Window, WindowMode};
-pub use luminance::backend::gl::state::StateQueryError;
-use luminance::backend::gl::GL;
 use luminance::context::GraphicsContext;
 use luminance::framebuffer::Framebuffer;
 use luminance::framebuffer::FramebufferError;
 use luminance::texture::{Dim2, Flat};
+pub use luminance_gl::gl33::StateQueryError;
+use luminance_gl::GL33;
 pub use luminance_windowing::{CursorMode, WindowDim, WindowOpt};
 use std::fmt;
 use std::os::raw::c_void;
@@ -62,7 +62,8 @@ pub struct GlfwSurface {
   pub window: Window,
   /// Wrapped GLFW events queue.
   pub events_rx: Receiver<(f64, WindowEvent)>,
-  gl: GL,
+  /// OpenGL 3.3 state.
+  gl: GL33,
 }
 
 impl GlfwSurface {
@@ -133,7 +134,7 @@ impl GlfwSurface {
     // init OpenGL
     gl::load_with(|s| window.get_proc_address(s) as *const c_void);
 
-    let gl = GL::new().map_err(GlfwSurfaceError::GraphicsStateError)?;
+    let gl = GL33::new().map_err(GlfwSurfaceError::GraphicsStateError)?;
     let surface = GlfwSurface {
       window,
       events_rx,
@@ -144,14 +145,14 @@ impl GlfwSurface {
   }
 
   /// Get the back buffer.
-  pub fn back_buffer(&mut self) -> Result<Framebuffer<GL, Flat, Dim2, (), ()>, FramebufferError> {
+  pub fn back_buffer(&mut self) -> Result<Framebuffer<GL33, Flat, Dim2, (), ()>, FramebufferError> {
     let (w, h) = self.window.get_framebuffer_size();
     Framebuffer::back_buffer(self, [w as u32, h as u32])
   }
 }
 
 unsafe impl GraphicsContext for GlfwSurface {
-  type Backend = GL;
+  type Backend = GL33;
 
   fn backend(&mut self) -> &mut Self::Backend {
     &mut self.gl

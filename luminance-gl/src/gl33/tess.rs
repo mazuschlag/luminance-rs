@@ -5,17 +5,17 @@ use std::os::raw::c_void;
 use std::ptr;
 use std::rc::Rc;
 
-use crate::backend::buffer::{Buffer as _, BufferSlice as BufferSliceBackend};
-use crate::backend::gl::buffer::{BufferSlice, BufferSliceMut, RawBuffer};
-use crate::backend::gl::state::{Bind, GLState};
-use crate::backend::gl::GL;
-use crate::backend::tess::{Tess as TessBackend, TessBuilder as TessBuilderBackend, TessSlice};
-use crate::tess::{Mode, TessError, TessIndex, TessIndexType, TessMapError};
-use crate::vertex::{
+use crate::gl33::buffer::{BufferSlice, BufferSliceMut, RawBuffer};
+use crate::gl33::state::{Bind, GLState};
+use crate::gl33::GL33;
+use luminance::backend::buffer::{Buffer as _, BufferSlice as BufferSliceBackend};
+use luminance::backend::tess::{Tess as TessBackend, TessBuilder as TessBuilderBackend, TessSlice};
+use luminance::tess::{Mode, TessError, TessIndex, TessIndexType, TessMapError};
+use luminance::vertex::{
   Normalized, Vertex, VertexAttribDesc, VertexAttribDim, VertexAttribType, VertexBufferDesc,
   VertexDesc, VertexInstancing,
 };
-use crate::vertex_restart::VertexRestart;
+use luminance::vertex_restart::VertexRestart;
 
 struct VertexBuffer {
   /// Indexed format of the buffer.
@@ -36,7 +36,7 @@ pub struct TessBuilder {
 
 impl TessBuilder {
   /// Build a tessellation based on a given number of vertices to render by default.
-  fn build_tess(self, ctx: &mut GL, vert_nb: usize, inst_nb: usize) -> Result<Tess, TessError> {
+  fn build_tess(self, ctx: &mut GL33, vert_nb: usize, inst_nb: usize) -> Result<Tess, TessError> {
     let mut vao: GLuint = 0;
     let mut gfx_st = ctx.state.borrow_mut();
 
@@ -205,7 +205,7 @@ impl TessBuilder {
   }
 }
 
-unsafe impl TessBuilderBackend for GL {
+unsafe impl TessBuilderBackend for GL33 {
   type TessBuilderRepr = TessBuilder;
 
   unsafe fn new_tess_builder(&mut self) -> Result<Self::TessBuilderRepr, TessError> {
@@ -337,7 +337,7 @@ struct IndexedDrawState {
   index_type: TessIndexType,
 }
 
-unsafe impl TessBackend for GL {
+unsafe impl TessBackend for GL33 {
   type TessRepr = Tess;
 
   unsafe fn build(
@@ -421,17 +421,17 @@ unsafe impl TessBackend for GL {
   }
 }
 
-unsafe impl<T> TessSlice<T> for GL {
+unsafe impl<T> TessSlice<T> for GL33 {
   type SliceRepr = BufferSlice<T>;
 
   type SliceMutRepr = BufferSliceMut<T>;
 
   unsafe fn destroy_tess_slice(slice: &mut Self::SliceRepr) {
-    <GL as BufferSliceBackend<T>>::destroy_buffer_slice(slice);
+    <GL33 as BufferSliceBackend<T>>::destroy_buffer_slice(slice);
   }
 
   unsafe fn destroy_tess_slice_mut(slice: &mut Self::SliceMutRepr) {
-    <GL as BufferSliceBackend<T>>::destroy_buffer_slice_mut(slice);
+    <GL33 as BufferSliceBackend<T>>::destroy_buffer_slice_mut(slice);
   }
 
   unsafe fn slice_vertices(tess: &Self::TessRepr) -> Result<Self::SliceRepr, TessMapError>
@@ -448,7 +448,7 @@ unsafe impl<T> TessSlice<T> for GL {
         if vb.fmt != target_fmt {
           Err(TessMapError::VertexTypeMismatch(vb.fmt.clone(), target_fmt))
         } else {
-          GL::slice_buffer(&vb.buf).map_err(TessMapError::BufferMapError)
+          GL33::slice_buffer(&vb.buf).map_err(TessMapError::BufferMapError)
         }
       }
 
@@ -472,7 +472,7 @@ unsafe impl<T> TessSlice<T> for GL {
         if vb.fmt != target_fmt {
           Err(TessMapError::VertexTypeMismatch(vb.fmt.clone(), target_fmt))
         } else {
-          GL::slice_buffer_mut(&mut vb.buf).map_err(TessMapError::BufferMapError)
+          GL33::slice_buffer_mut(&mut vb.buf).map_err(TessMapError::BufferMapError)
         }
       }
 
@@ -495,7 +495,7 @@ unsafe impl<T> TessSlice<T> for GL {
         if *index_type != target_fmt {
           Err(TessMapError::IndexTypeMismatch(*index_type, target_fmt))
         } else {
-          GL::slice_buffer(_buffer).map_err(TessMapError::BufferMapError)
+          GL33::slice_buffer(_buffer).map_err(TessMapError::BufferMapError)
         }
       }
 
@@ -518,7 +518,7 @@ unsafe impl<T> TessSlice<T> for GL {
         if *index_type != target_fmt {
           Err(TessMapError::IndexTypeMismatch(*index_type, target_fmt))
         } else {
-          GL::slice_buffer_mut(_buffer).map_err(TessMapError::BufferMapError)
+          GL33::slice_buffer_mut(_buffer).map_err(TessMapError::BufferMapError)
         }
       }
 
@@ -540,7 +540,7 @@ unsafe impl<T> TessSlice<T> for GL {
         if vb.fmt != target_fmt {
           Err(TessMapError::VertexTypeMismatch(vb.fmt.clone(), target_fmt))
         } else {
-          GL::slice_buffer(&vb.buf).map_err(TessMapError::BufferMapError)
+          GL33::slice_buffer(&vb.buf).map_err(TessMapError::BufferMapError)
         }
       }
 
@@ -564,7 +564,7 @@ unsafe impl<T> TessSlice<T> for GL {
         if vb.fmt != target_fmt {
           Err(TessMapError::VertexTypeMismatch(vb.fmt.clone(), target_fmt))
         } else {
-          GL::slice_buffer_mut(&mut vb.buf).map_err(TessMapError::BufferMapError)
+          GL33::slice_buffer_mut(&mut vb.buf).map_err(TessMapError::BufferMapError)
         }
       }
 
@@ -573,11 +573,11 @@ unsafe impl<T> TessSlice<T> for GL {
   }
 
   unsafe fn obtain_slice(slice: &Self::SliceRepr) -> Result<&[T], TessMapError> {
-    <GL as BufferSliceBackend<T>>::obtain_slice(slice).map_err(TessMapError::BufferMapError)
+    <GL33 as BufferSliceBackend<T>>::obtain_slice(slice).map_err(TessMapError::BufferMapError)
   }
 
   unsafe fn obtain_slice_mut(slice: &mut Self::SliceMutRepr) -> Result<&mut [T], TessMapError> {
-    <GL as BufferSliceBackend<T>>::obtain_slice_mut(slice).map_err(TessMapError::BufferMapError)
+    <GL33 as BufferSliceBackend<T>>::obtain_slice_mut(slice).map_err(TessMapError::BufferMapError)
   }
 }
 

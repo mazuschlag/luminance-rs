@@ -1,6 +1,6 @@
 use gl::types::*;
 
-use crate::pixel::{PixelFormat, Format, Size, Type};
+use luminance::pixel::{Format, PixelFormat, Size, Type};
 
 // OpenGL format, internal sized-format and type.
 pub(crate) fn opengl_pixel_format(pf: PixelFormat) -> Option<(GLenum, GLenum, GLenum)> {

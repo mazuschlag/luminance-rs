@@ -5,11 +5,11 @@ use std::cell::RefCell;
 use std::fmt;
 use std::marker::PhantomData;
 
-use crate::backend::gl::depth_test::depth_comparison_to_glenum;
-use crate::blending::{BlendingState, Equation, Factor};
-use crate::depth_test::{DepthComparison, DepthTest};
-use crate::face_culling::{FaceCullingMode, FaceCullingOrder, FaceCullingState};
-use crate::vertex_restart::VertexRestart;
+use crate::gl33::depth_test::depth_comparison_to_glenum;
+use luminance::blending::{Equation, Factor};
+use luminance::depth_test::DepthComparison;
+use luminance::face_culling::{FaceCullingMode, FaceCullingOrder};
+use luminance::vertex_restart::VertexRestart;
 
 // TLS synchronization barrier for `GLState`.
 //
@@ -698,4 +698,31 @@ unsafe fn get_ctx_srgb_framebuffer_enabled() -> Result<bool, StateQueryError> {
     gl::FALSE => Ok(false),
     _ => Err(StateQueryError::UnknownSRGBFramebufferState(state)),
   }
+}
+
+/// Whether or not enable blending.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub(crate) enum BlendingState {
+  /// Enable blending.
+  On,
+  /// Disable blending.
+  Off,
+}
+
+/// Whether or not depth test should be enabled.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub(crate) enum DepthTest {
+  /// The depth test is enabled.
+  On,
+  /// The depth test is disabled.
+  Off,
+}
+
+/// Should face culling be enabled?
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub(crate) enum FaceCullingState {
+  /// Enable face culling.
+  On,
+  /// Disable face culling.
+  Off,
 }

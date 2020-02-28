@@ -1,25 +1,22 @@
 use gl::types::*;
 
-use crate::backend::gl::state::GLState;
-use crate::backend::gl::GL;
-use crate::backend::pipeline::{
-  Pipeline as PipelineBackend, PipelineBase, PipelineBuffer, PipelineTexture,
-};
-use crate::backend::render_gate::RenderGate;
-use crate::backend::shading_gate::ShadingGate;
-use crate::backend::tess::Tess;
-use crate::backend::tess_gate::TessGate;
-use crate::blending::BlendingState;
-use crate::depth_test::DepthTest;
-use crate::face_culling::FaceCullingState;
-use crate::pipeline::{PipelineError, PipelineState, Viewport};
-use crate::pixel::Pixel;
-use crate::render_state::RenderState;
-use crate::texture::{Dimensionable, Layerable};
-
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
+
+use crate::gl33::state::{BlendingState, DepthTest, FaceCullingState, GLState};
+use crate::gl33::GL33;
+use luminance::backend::pipeline::{
+  Pipeline as PipelineBackend, PipelineBase, PipelineBuffer, PipelineTexture,
+};
+use luminance::backend::render_gate::RenderGate;
+use luminance::backend::shading_gate::ShadingGate;
+use luminance::backend::tess::Tess;
+use luminance::backend::tess_gate::TessGate;
+use luminance::pipeline::{PipelineError, PipelineState, Viewport};
+use luminance::pixel::Pixel;
+use luminance::render_state::RenderState;
+use luminance::texture::{Dimensionable, Layerable};
 
 #[non_exhaustive]
 pub struct Pipeline {
@@ -66,7 +63,7 @@ where
   }
 }
 
-unsafe impl PipelineBase for GL {
+unsafe impl PipelineBase for GL33 {
   type PipelineRepr = Pipeline;
 
   unsafe fn new_pipeline(&mut self) -> Result<Self::PipelineRepr, PipelineError> {
@@ -78,7 +75,7 @@ unsafe impl PipelineBase for GL {
   }
 }
 
-unsafe impl<L, D> PipelineBackend<L, D> for GL
+unsafe impl<L, D> PipelineBackend<L, D> for GL33
 where
   L: Layerable,
   D: Dimensionable,
@@ -141,7 +138,7 @@ where
   }
 }
 
-unsafe impl<T> PipelineBuffer<T> for GL {
+unsafe impl<T> PipelineBuffer<T> for GL33 {
   type BoundBufferRepr = BoundBuffer;
 
   unsafe fn bind_buffer(
@@ -167,7 +164,7 @@ unsafe impl<T> PipelineBuffer<T> for GL {
   }
 }
 
-unsafe impl<L, D, P> PipelineTexture<L, D, P> for GL
+unsafe impl<L, D, P> PipelineTexture<L, D, P> for GL33
 where
   L: Layerable,
   D: Dimensionable,
@@ -205,7 +202,7 @@ where
   }
 }
 
-unsafe impl TessGate for GL {
+unsafe impl TessGate for GL33 {
   unsafe fn render(
     &mut self,
     tess: &Self::TessRepr,
@@ -217,7 +214,7 @@ unsafe impl TessGate for GL {
   }
 }
 
-unsafe impl RenderGate for GL {
+unsafe impl RenderGate for GL33 {
   unsafe fn enter_render_state(&mut self, rdr_st: &RenderState) {
     let mut gfx_state = self.state.borrow_mut();
 
@@ -252,7 +249,7 @@ unsafe impl RenderGate for GL {
   }
 }
 
-unsafe impl ShadingGate for GL {
+unsafe impl ShadingGate for GL33 {
   unsafe fn apply_shader_program(&mut self, shader_program: &Self::ProgramRepr) {
     self.state.borrow_mut().use_program(shader_program.handle);
   }

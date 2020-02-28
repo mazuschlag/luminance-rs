@@ -10,10 +10,10 @@ use std::ptr;
 use std::rc::Rc;
 use std::slice;
 
-use crate::backend::buffer::{Buffer, BufferBase, BufferSlice as BufferSliceBackend};
-use crate::backend::gl::state::{Bind, GLState};
-use crate::backend::gl::GL;
-use crate::buffer::BufferError;
+use crate::gl33::state::{Bind, GLState};
+use crate::gl33::GL33;
+use luminance::backend::buffer::{Buffer, BufferBase, BufferSlice as BufferSliceBackend};
+use luminance::buffer::BufferError;
 
 /// OpenGL buffer.
 #[derive(Clone)]
@@ -24,11 +24,11 @@ pub struct RawBuffer {
   state: Rc<RefCell<GLState>>,
 }
 
-unsafe impl BufferBase for GL {
+unsafe impl BufferBase for GL33 {
   type BufferRepr = RawBuffer;
 }
 
-unsafe impl<T> Buffer<T> for GL {
+unsafe impl<T> Buffer<T> for GL33 {
   unsafe fn new_buffer(&mut self, len: usize) -> Result<Self::BufferRepr, BufferError> {
     let mut buffer: GLuint = 0;
     let bytes = mem::size_of::<T>() * len;
@@ -212,7 +212,7 @@ pub struct BufferSliceMut<T> {
   ptr: *mut T,
 }
 
-unsafe impl<T> BufferSliceBackend<T> for GL {
+unsafe impl<T> BufferSliceBackend<T> for GL33 {
   type SliceRepr = BufferSlice<T>;
 
   type SliceMutRepr = BufferSliceMut<T>;

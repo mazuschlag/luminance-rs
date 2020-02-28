@@ -6,13 +6,13 @@ use std::os::raw::c_void;
 use std::ptr;
 use std::rc::Rc;
 
-use crate::backend::gl::depth_test::depth_comparison_to_glenum;
-use crate::backend::gl::pixel::opengl_pixel_format;
-use crate::backend::gl::state::GLState;
-use crate::backend::gl::GL;
-use crate::backend::texture::{Texture as TextureBackend, TextureBase};
-use crate::pixel::{Pixel, PixelFormat};
-use crate::texture::{
+use crate::gl33::depth_test::depth_comparison_to_glenum;
+use crate::gl33::pixel::opengl_pixel_format;
+use crate::gl33::state::GLState;
+use crate::gl33::GL33;
+use luminance::backend::texture::{Texture as TextureBackend, TextureBase};
+use luminance::pixel::{Pixel, PixelFormat};
+use luminance::texture::{
   Dim, Dimensionable, GenMipmaps, Layerable, Layering, MagFilter, MinFilter, Sampler, TextureError,
   Wrap,
 };
@@ -24,11 +24,11 @@ pub struct Texture {
   state: Rc<RefCell<GLState>>,
 }
 
-unsafe impl TextureBase for GL {
+unsafe impl TextureBase for GL33 {
   type TextureRepr = Texture;
 }
 
-unsafe impl<L, D, P> TextureBackend<L, D, P> for GL
+unsafe impl<L, D, P> TextureBackend<L, D, P> for GL33
 where
   D: Dimensionable,
   L: Layerable,

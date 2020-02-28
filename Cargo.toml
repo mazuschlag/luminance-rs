@@ -5,6 +5,7 @@ members = [
   "luminance",
   "luminance-derive",
   "luminance-examples",
+  "luminance-gl",
   "luminance-glfw",
   "luminance-glutin",
   "luminance-windowing",
@@ -14,6 +15,7 @@ members = [
 luminance = { path = "./luminance" }
 luminance-derive = { path = "./luminance-derive" }
 luminance-examples = { path = "./luminance-examples" }
+luminance-gl = { path = "./luminance-gl" }
 luminance-glfw = { path = "./luminance-glfw" }
 luminance-glutin = { path = "./luminance-glutin" }
 luminance-windowing = { path = "./luminance-windowing" }

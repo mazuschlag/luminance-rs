@@ -46,11 +46,11 @@ pub enum Viewport {
 /// Various customization options for pipelines.
 #[derive(Clone, Debug)]
 pub struct PipelineState {
-  pub(crate) clear_color: [f32; 4],
-  pub(crate) clear_color_enabled: bool,
-  pub(crate) clear_depth_enabled: bool,
-  pub(crate) viewport: Viewport,
-  pub(crate) srgb_enabled: bool,
+  pub clear_color: [f32; 4],
+  pub clear_color_enabled: bool,
+  pub clear_depth_enabled: bool,
+  pub viewport: Viewport,
+  pub srgb_enabled: bool,
 }
 
 impl Default for PipelineState {
