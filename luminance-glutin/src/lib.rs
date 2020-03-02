@@ -8,22 +8,19 @@
 use gl;
 pub use glutin;
 use glutin::{
-  event_loop::EventLoop,
-  window::WindowBuilder,
-  Api, ContextBuilder, ContextError, CreationError, GlProfile, GlRequest, NotCurrent,
-  PossiblyCurrent, WindowedContext,
+  event_loop::EventLoop, window::WindowBuilder, Api, ContextBuilder, ContextError, CreationError,
+  GlProfile, GlRequest, NotCurrent, PossiblyCurrent, WindowedContext,
 };
 
 use luminance::context::GraphicsContext;
-use luminance::framebuffer::Framebuffer;
-use luminance::state::{GraphicsState, StateQueryError};
+use luminance::framebuffer::{Framebuffer, FramebufferError};
 use luminance::texture::Dim2;
-pub use luminance_windowing::{CursorMode, Surface, WindowDim, WindowOpt};
+pub use luminance_gl::gl33::StateQueryError;
+use luminance_gl::GL33;
+pub use luminance_windowing::{CursorMode, WindowDim, WindowOpt};
 
-use std::cell::RefCell;
 use std::fmt;
 use std::os::raw::c_void;
-use std::rc::Rc;
 
 /// Error that might occur when creating a Glutin surface.
 #[derive(Debug)]
@@ -69,12 +66,15 @@ impl From<ContextError> for GlutinError {
 pub struct GlutinSurface {
   /// The windowed context.
   pub ctx: WindowedContext<PossiblyCurrent>,
-  gfx_state: Rc<RefCell<GraphicsState>>,
+  /// OpenGL 3.3 state.
+  gl: GL33,
 }
 
 unsafe impl GraphicsContext for GlutinSurface {
-  fn state(&self) -> &Rc<RefCell<GraphicsState>> {
-    &self.gfx_state
+  type Backend = GL33;
+
+  fn backend(&mut self) -> &mut Self::Backend {
+    &mut self.gl
   }
 }
 
@@ -86,7 +86,10 @@ impl GlutinSurface {
   ///
   /// `window_builder` is the default object when passed to your closure and `ctx_builder` is
   /// already initialized for the OpenGL context (you’re not supposed to change it!).
-  pub fn from_builders<WB, CB>(window_builder: WB, ctx_builder: CB) -> Result<(Self, EventLoop<()>), GlutinError>
+  pub fn from_builders<WB, CB>(
+    window_builder: WB,
+    ctx_builder: CB,
+  ) -> Result<(Self, EventLoop<()>), GlutinError>
   where
     WB: FnOnce(WindowBuilder) -> WindowBuilder,
     CB: FnOnce(ContextBuilder<NotCurrent>) -> ContextBuilder<NotCurrent>,
@@ -109,17 +112,17 @@ impl GlutinSurface {
 
     ctx.window().set_visible(true);
 
-    let gfx_state = GraphicsState::new().map_err(GlutinError::GraphicsStateError)?;
-    let surface = GlutinSurface {
-      ctx,
-      gfx_state: Rc::new(RefCell::new(gfx_state)),
-    };
+    let gl = GL33::new().map_err(GlutinError::GraphicsStateError)?;
+    let surface = GlutinSurface { ctx, gl };
 
     Ok((surface, event_loop))
   }
 
   /// Create a new [`GlutinSurface`] from scratch.
-  pub fn new(window_builder: WindowBuilder, samples: u16) -> Result<(Self, EventLoop<()>), GlutinError> {
+  pub fn new(
+    window_builder: WindowBuilder,
+    samples: u16,
+  ) -> Result<(Self, EventLoop<()>), GlutinError> {
     let event_loop = EventLoop::new();
 
     let windowed_ctx = ContextBuilder::new()
@@ -136,11 +139,8 @@ impl GlutinSurface {
 
     ctx.window().set_visible(true);
 
-    let gfx_state = GraphicsState::new().map_err(GlutinError::GraphicsStateError)?;
-    let surface = GlutinSurface {
-      ctx,
-      gfx_state: Rc::new(RefCell::new(gfx_state)),
-    };
+    let gl = GL33::new().map_err(GlutinError::GraphicsStateError)?;
+    let surface = GlutinSurface { ctx, gl };
 
     Ok((surface, event_loop))
   }
@@ -155,8 +155,8 @@ impl GlutinSurface {
   }
 
   /// Get access to the back buffer.
-  pub fn back_buffer(&mut self) -> Result<Framebuffer<Dim2, (), ()>, GlutinError> {
-    Ok(Framebuffer::back_buffer(self, self.size()))
+  pub fn back_buffer(&mut self) -> Result<Framebuffer<GL33, Dim2, (), ()>, FramebufferError> {
+    Framebuffer::back_buffer(self, self.size())
   }
 
   /// Swap the back and front buffers.

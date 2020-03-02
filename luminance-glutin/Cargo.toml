@@ -1,6 +1,6 @@
 [package]
 name = "luminance-glutin"
-version = "0.9.1"
+version = "1.0.0-rc.1"
 license = "BSD-3-Clause"
 authors = ["Dimitri Sabadie <dimitri.sabadie@gmail.com>"]
 description = "GLFW support for luminance"
@@ -18,8 +18,9 @@ maintenance = { status = "actively-developed" }
 [dependencies]
 gl = "0.14"
 glutin = { version = "0.23", default-features = false }
-luminance = ">= 0.38, < 0.40"
-luminance-windowing = "0.8"
+luminance = "1.0.0-rc.1"
+luminance-gl = "1.0.0-rc.1"
+luminance-windowing = "1.0.0-rc.1"
 
 [features]
 serde = ["glutin/serde"]
