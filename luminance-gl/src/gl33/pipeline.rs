@@ -16,7 +16,7 @@ use luminance::backend::tess_gate::TessGate;
 use luminance::pipeline::{PipelineError, PipelineState, Viewport};
 use luminance::pixel::Pixel;
 use luminance::render_state::RenderState;
-use luminance::texture::{Dimensionable, Layerable};
+use luminance::texture::Dimensionable;
 
 #[non_exhaustive]
 pub struct Pipeline {
@@ -39,20 +39,18 @@ impl Drop for BoundBuffer {
   }
 }
 
-pub struct BoundTexture<L, D, P>
+pub struct BoundTexture<D, P>
 where
-  L: Layerable,
   D: Dimensionable,
   P: Pixel,
 {
   pub(crate) unit: u32,
   state: Rc<RefCell<GLState>>,
-  _phantom: PhantomData<*const (L, D, P)>,
+  _phantom: PhantomData<*const (D, P)>,
 }
 
-impl<L, D, P> Drop for BoundTexture<L, D, P>
+impl<D, P> Drop for BoundTexture<D, P>
 where
-  L: Layerable,
   D: Dimensionable,
   P: Pixel,
 {
@@ -75,9 +73,8 @@ unsafe impl PipelineBase for GL33 {
   }
 }
 
-unsafe impl<L, D> PipelineBackend<L, D> for GL33
+unsafe impl<D> PipelineBackend<D> for GL33
 where
-  L: Layerable,
   D: Dimensionable,
 {
   unsafe fn start_pipeline(
@@ -164,20 +161,18 @@ unsafe impl<T> PipelineBuffer<T> for GL33 {
   }
 }
 
-unsafe impl<L, D, P> PipelineTexture<L, D, P> for GL33
+unsafe impl<D, P> PipelineTexture<D, P> for GL33
 where
-  L: Layerable,
   D: Dimensionable,
   P: Pixel,
 {
-  type BoundTextureRepr = BoundTexture<L, D, P>;
+  type BoundTextureRepr = BoundTexture<D, P>;
 
   unsafe fn bind_texture(
     pipeline: &Self::PipelineRepr,
     texture: &Self::TextureRepr,
   ) -> Result<Self::BoundTextureRepr, PipelineError>
   where
-    L: Layerable,
     D: Dimensionable,
     P: Pixel,
   {

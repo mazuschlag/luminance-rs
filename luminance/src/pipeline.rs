@@ -9,8 +9,8 @@ use crate::context::GraphicsContext;
 use crate::framebuffer::Framebuffer;
 use crate::pixel::Pixel;
 use crate::shading_gate::ShadingGate;
+use crate::texture::Dimensionable;
 use crate::texture::Texture;
-use crate::texture::{Dimensionable, Layerable};
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -166,18 +166,17 @@ where
     PipelineGate { ctx }
   }
 
-  pub fn pipeline<L, D, CS, DS, F>(
+  pub fn pipeline<D, CS, DS, F>(
     &mut self,
-    framebuffer: &Framebuffer<C::Backend, L, D, CS, DS>,
+    framebuffer: &Framebuffer<C::Backend, D, CS, DS>,
     pipeline_state: &PipelineState,
     f: F,
   ) -> Result<(), PipelineError>
   where
-    C::Backend: FramebufferBackend<L, D> + PipelineBackend<L, D>,
-    L: Layerable,
+    C::Backend: FramebufferBackend<D> + PipelineBackend<D>,
     D: Dimensionable,
-    CS: ColorSlot<C::Backend, L, D>,
-    DS: DepthSlot<C::Backend, L, D>,
+    CS: ColorSlot<C::Backend, D>,
+    DS: DepthSlot<C::Backend, D>,
     F: for<'b> FnOnce(Pipeline<'b, C::Backend>, ShadingGate<'b, C>),
   {
     unsafe {
@@ -208,10 +207,9 @@ where
   _phantom: PhantomData<&'a T>,
 }
 
-pub struct BoundTexture<'a, B, L, D, P>
+pub struct BoundTexture<'a, B, D, P>
 where
-  B: PipelineTexture<L, D, P>,
-  L: Layerable,
+  B: PipelineTexture<D, P>,
   D: Dimensionable,
   P: Pixel,
 {
@@ -238,13 +236,12 @@ where
     }
   }
 
-  pub fn bind_texture<L, D, P>(
+  pub fn bind_texture<D, P>(
     &'a self,
-    texture: &'a Texture<B, L, D, P>,
-  ) -> Result<BoundTexture<'a, B, L, D, P>, PipelineError>
+    texture: &'a Texture<B, D, P>,
+  ) -> Result<BoundTexture<'a, B, D, P>, PipelineError>
   where
-    B: PipelineTexture<L, D, P>,
-    L: Layerable,
+    B: PipelineTexture<D, P>,
     D: Dimensionable,
     P: Pixel,
   {

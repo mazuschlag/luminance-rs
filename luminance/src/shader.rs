@@ -9,7 +9,7 @@ use crate::backend::shader::{Shader, Uniformable};
 use crate::context::GraphicsContext;
 use crate::pipeline::{BoundBuffer, BoundTexture};
 use crate::pixel::Pixel;
-use crate::texture::{Dimensionable, Layerable};
+use crate::texture::Dimensionable;
 use crate::vertex::Semantics;
 
 /// A shader stage type.
@@ -275,18 +275,30 @@ pub enum UniformType {
   ISampler2D,
   /// Signed integral 3D texture sampler.
   ISampler3D,
+  /// Signed integral 1D array texture sampler.
+  ISampler1DArray,
+  /// Signed integral 2D array texture sampler.
+  ISampler2DArray,
   /// Unsigned integral 1D texture sampler.
   UISampler1D,
   /// Unsigned integral 2D texture sampler.
   UISampler2D,
   /// Unsigned integral 3D texture sampler.
   UISampler3D,
+  /// Unsigned integral 1D array texture sampler.
+  UISampler1DArray,
+  /// Unsigned integral 2D array texture sampler.
+  UISampler2DArray,
   /// Floating-point 1D texture sampler.
   Sampler1D,
   /// Floating-point 2D texture sampler.
   Sampler2D,
   /// Floating-point 3D texture sampler.
   Sampler3D,
+  /// Floating-point 1D array texture sampler.
+  Sampler1DArray,
+  /// Floating-point 2D array texture sampler.
+  Sampler2DArray,
   /// Signed cubemap sampler.
   ICubemap,
   /// Unsigned cubemap sampler.
@@ -324,12 +336,18 @@ impl fmt::Display for UniformType {
       UniformType::ISampler1D => f.write_str("isampler1D"),
       UniformType::ISampler2D => f.write_str("isampler2D"),
       UniformType::ISampler3D => f.write_str("isampler3D"),
-      UniformType::UISampler1D => f.write_str("uSampler1D"),
-      UniformType::UISampler2D => f.write_str("uSampler2D"),
-      UniformType::UISampler3D => f.write_str("uSampler3D"),
+      UniformType::ISampler1DArray => f.write_str("isampler1DArray"),
+      UniformType::ISampler2DArray => f.write_str("isampler2DArray"),
+      UniformType::UISampler1D => f.write_str("usampler1D"),
+      UniformType::UISampler2D => f.write_str("usampler2D"),
+      UniformType::UISampler3D => f.write_str("usampler3D"),
+      UniformType::UISampler1DArray => f.write_str("usampler1DArray"),
+      UniformType::UISampler2DArray => f.write_str("usampler2DArray"),
       UniformType::Sampler1D => f.write_str("sampler1D"),
       UniformType::Sampler2D => f.write_str("sampler2D"),
       UniformType::Sampler3D => f.write_str("sampler3D"),
+      UniformType::Sampler1DArray => f.write_str("sampler1DArray"),
+      UniformType::Sampler2DArray => f.write_str("sampler2DArray"),
       UniformType::ICubemap => f.write_str("isamplerCube"),
       UniformType::UICubemap => f.write_str("usamplerCube"),
       UniformType::Cubemap => f.write_str("samplerCube"),
@@ -764,11 +782,10 @@ where
   }
 }
 
-unsafe impl<'a, B, L, D, P> Uniformable<B> for BoundTexture<'a, B, L, D, P>
+unsafe impl<'a, B, D, P> Uniformable<B> for BoundTexture<'a, B, D, P>
 where
-  B: PipelineTexture<L, D, P>,
+  B: PipelineTexture<D, P>,
   B::BoundTextureRepr: Uniformable<B>,
-  L: Layerable,
   D: Dimensionable,
   P: Pixel,
 {

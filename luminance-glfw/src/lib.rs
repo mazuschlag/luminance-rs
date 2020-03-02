@@ -8,7 +8,7 @@ use glfw::{self, Context, CursorMode as GlfwCursorMode, SwapInterval, Window, Wi
 use luminance::context::GraphicsContext;
 use luminance::framebuffer::Framebuffer;
 use luminance::framebuffer::FramebufferError;
-use luminance::texture::{Dim2, Flat};
+use luminance::texture::Dim2;
 pub use luminance_gl::gl33::StateQueryError;
 use luminance_gl::GL33;
 pub use luminance_windowing::{CursorMode, WindowDim, WindowOpt};
@@ -145,7 +145,7 @@ impl GlfwSurface {
   }
 
   /// Get the back buffer.
-  pub fn back_buffer(&mut self) -> Result<Framebuffer<GL33, Flat, Dim2, (), ()>, FramebufferError> {
+  pub fn back_buffer(&mut self) -> Result<Framebuffer<GL33, Dim2, (), ()>, FramebufferError> {
     let (w, h) = self.window.get_framebuffer_size();
     Framebuffer::back_buffer(self, [w as u32, h as u32])
   }

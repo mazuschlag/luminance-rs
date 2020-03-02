@@ -4,11 +4,10 @@ use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
 use crate::backend::texture::TextureBase;
 use crate::framebuffer::FramebufferError;
-use crate::texture::{Dim2, Dimensionable, Flat, Layerable, Sampler};
+use crate::texture::{Dim2, Dimensionable, Sampler};
 
-pub unsafe trait Framebuffer<L, D>: TextureBase
+pub unsafe trait Framebuffer<D>: TextureBase
 where
-  L: Layerable,
   D: Dimensionable,
 {
   type FramebufferRepr;
@@ -20,8 +19,8 @@ where
     sampler: &Sampler,
   ) -> Result<Self::FramebufferRepr, FramebufferError>
   where
-    CS: ColorSlot<Self, L, D>,
-    DS: DepthSlot<Self, L, D>;
+    CS: ColorSlot<Self, D>,
+    DS: DepthSlot<Self, D>;
 
   unsafe fn destroy_framebuffer(framebuffer: &mut Self::FramebufferRepr);
 
@@ -43,7 +42,7 @@ where
   unsafe fn framebuffer_size(framebuffer: &Self::FramebufferRepr) -> D::Size;
 }
 
-pub unsafe trait FramebufferBackBuffer: Framebuffer<Flat, Dim2> {
+pub unsafe trait FramebufferBackBuffer: Framebuffer<Dim2> {
   unsafe fn back_buffer(
     &mut self,
     size: <Dim2 as Dimensionable>::Size,

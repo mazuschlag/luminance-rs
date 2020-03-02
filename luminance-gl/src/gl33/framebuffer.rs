@@ -9,7 +9,7 @@ use luminance::backend::color_slot::ColorSlot;
 use luminance::backend::depth_slot::DepthSlot;
 use luminance::backend::framebuffer::{Framebuffer as FramebufferBackend, FramebufferBackBuffer};
 use luminance::framebuffer::{FramebufferError, IncompleteReason};
-use luminance::texture::{Dim2, Dimensionable, Layerable, Sampler};
+use luminance::texture::{Dim2, Dimensionable, Sampler};
 
 pub struct Framebuffer<D>
 where
@@ -21,9 +21,8 @@ where
   state: Rc<RefCell<GLState>>,
 }
 
-unsafe impl<L, D> FramebufferBackend<L, D> for GL33
+unsafe impl<D> FramebufferBackend<D> for GL33
 where
-  L: Layerable,
   D: Dimensionable,
 {
   type FramebufferRepr = Framebuffer<D>;
@@ -35,8 +34,8 @@ where
     _: &Sampler,
   ) -> Result<Self::FramebufferRepr, FramebufferError>
   where
-    CS: ColorSlot<Self, L, D>,
-    DS: DepthSlot<Self, L, D>,
+    CS: ColorSlot<Self, D>,
+    DS: DepthSlot<Self, D>,
   {
     let mut handle: GLuint = 0;
     let color_formats = CS::color_formats();

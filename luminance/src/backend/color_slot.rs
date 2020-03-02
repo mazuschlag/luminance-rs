@@ -3,14 +3,13 @@ use crate::backend::texture::Texture as TextureBackend;
 use crate::context::GraphicsContext;
 use crate::framebuffer::FramebufferError;
 use crate::pixel::{ColorPixel, PixelFormat, RenderablePixel};
-use crate::texture::{Dimensionable, Layerable, Sampler};
+use crate::texture::{Dimensionable, Sampler};
 
 use crate::texture::Texture;
 
-pub trait ColorSlot<B, L, D>
+pub trait ColorSlot<B, D>
 where
-  B: ?Sized + Framebuffer<L, D>,
-  L: Layerable,
+  B: ?Sized + Framebuffer<D>,
   D: Dimensionable,
   D::Size: Copy,
 {
@@ -30,10 +29,9 @@ where
     C: GraphicsContext<Backend = B>;
 }
 
-impl<B, L, D> ColorSlot<B, L, D> for ()
+impl<B, D> ColorSlot<B, D> for ()
 where
-  B: ?Sized + Framebuffer<L, D>,
-  L: Layerable,
+  B: ?Sized + Framebuffer<D>,
   D: Dimensionable,
   D::Size: Copy,
 {
@@ -58,15 +56,14 @@ where
   }
 }
 
-impl<B, L, D, P> ColorSlot<B, L, D> for P
+impl<B, D, P> ColorSlot<B, D> for P
 where
-  B: ?Sized + Framebuffer<L, D> + TextureBackend<L, D, P>,
-  L: Layerable,
+  B: ?Sized + Framebuffer<D> + TextureBackend<D, P>,
   D: Dimensionable,
   D::Size: Copy,
   Self: ColorPixel + RenderablePixel,
 {
-  type ColorTextures = Texture<B, L, D, P>;
+  type ColorTextures = Texture<B, D, P>;
 
   fn color_formats() -> Vec<PixelFormat> {
     vec![P::pixel_format()]
@@ -92,17 +89,16 @@ where
 
 macro_rules! impl_color_slot_tuple {
   ($($pf:ident),*) => {
-    impl<B, L, D, $($pf),*> ColorSlot<B, L, D> for ($($pf),*)
+    impl<B, D, $($pf),*> ColorSlot<B, D> for ($($pf),*)
     where
-      B: ?Sized + Framebuffer<L, D> + $(TextureBackend<L, D, $pf> +)*,
-      L: Layerable,
+      B: ?Sized + Framebuffer<D> + $(TextureBackend<D, $pf> +)*,
       D: Dimensionable,
       D::Size: Copy,
       $(
         $pf: ColorPixel + RenderablePixel
       ),*
     {
-      type ColorTextures = ($(Texture<B, L, D, $pf>),*);
+      type ColorTextures = ($(Texture<B, D, $pf>),*);
 
       fn color_formats() -> Vec<PixelFormat> {
         vec![$($pf::pixel_format()),*]
@@ -119,7 +115,7 @@ macro_rules! impl_color_slot_tuple {
       where
         C: GraphicsContext<Backend = B>, {
           Ok(
-            ($(<$pf as ColorSlot<B, L, D>>::reify_color_textures(ctx, size, mipmaps, sampler, framebuffer, attachment_index + 1)?),*)
+            ($(<$pf as ColorSlot<B, D>>::reify_color_textures(ctx, size, mipmaps, sampler, framebuffer, attachment_index + 1)?),*)
           )
       }
     }

@@ -113,6 +113,10 @@ pub enum Dim {
   Dim3,
   /// Cubemap (i.e. a cube defining 6 faces — akin to 4D).
   Cubemap,
+  /// 1D array.
+  Dim1Array,
+  /// 2D array.
+  Dim2Array,
 }
 
 /// 1D dimension.
@@ -288,43 +292,81 @@ pub enum CubeFace {
   NegativeZ,
 }
 
-/// Trait used to reify a type into a `Layering`.
-pub trait Layerable {
-  /// Reify to `Layering`.
-  fn layering() -> Layering;
-}
-
-/// Texture layering. If a texture is layered, it has an extra coordinate to access the layer.
+/// 1D array dimension.
 #[derive(Clone, Copy, Debug)]
-pub enum Layering {
-  /// Non-layered.
-  Flat,
-  /// Layered.
-  Layered,
-}
+pub struct Dim1Array;
 
-/// Flat texture hint.
-///
-/// A flat texture means it doesn’t have the concept of layers.
-#[derive(Clone, Copy, Debug)]
-pub struct Flat;
+impl Dimensionable for Dim1Array {
+  type Offset = (u32, u32);
+  type Size = (u32, u32);
 
-impl Layerable for Flat {
-  fn layering() -> Layering {
-    Layering::Flat
+  const ZERO_OFFSET: Self::Offset = (0, 0);
+
+  fn dim() -> Dim {
+    Dim::Dim1Array
+  }
+
+  fn width(size: Self::Size) -> u32 {
+    size.0
+  }
+
+  fn height(size: Self::Size) -> u32 {
+    size.1
+  }
+
+  fn x_offset(off: Self::Offset) -> u32 {
+    off.0
+  }
+
+  fn y_offset(off: Self::Offset) -> u32 {
+    off.1
+  }
+
+  fn count((width, layer): Self::Size) -> usize {
+    width as usize * layer as usize
   }
 }
 
-/// Layered texture hint.
-///
-/// A layered texture has an extra coordinate to access the layer and can be thought of as an array
-/// of textures.
+/// 2D dimension.
 #[derive(Clone, Copy, Debug)]
-pub struct Layered;
+pub struct Dim2Array;
 
-impl Layerable for Layered {
-  fn layering() -> Layering {
-    Layering::Layered
+impl Dimensionable for Dim2Array {
+  type Offset = ([u32; 2], u32);
+  type Size = ([u32; 2], u32);
+
+  const ZERO_OFFSET: Self::Offset = ([0, 0], 0);
+
+  fn dim() -> Dim {
+    Dim::Dim2Array
+  }
+
+  fn width(size: Self::Size) -> u32 {
+    size.0[0]
+  }
+
+  fn height(size: Self::Size) -> u32 {
+    size.0[1]
+  }
+
+  fn depth(size: Self::Size) -> u32 {
+    size.1
+  }
+
+  fn x_offset(off: Self::Offset) -> u32 {
+    off.0[0]
+  }
+
+  fn y_offset(off: Self::Offset) -> u32 {
+    off.0[1]
+  }
+
+  fn z_offset(off: Self::Offset) -> u32 {
+    off.1
+  }
+
+  fn count(([width, height], layer): Self::Size) -> usize {
+    width as usize * height as usize * layer as usize
   }
 }
 
@@ -408,22 +450,20 @@ impl fmt::Display for TextureError {
   }
 }
 
-pub struct Texture<S, L, D, P>
+pub struct Texture<S, D, P>
 where
-  S: ?Sized + TextureBackend<L, D, P>,
-  L: Layerable,
+  S: ?Sized + TextureBackend<D, P>,
   D: Dimensionable,
   P: Pixel,
 {
   pub(crate) repr: S::TextureRepr,
   size: D::Size,
-  _phantom: PhantomData<(*const L, *const P)>,
+  _phantom: PhantomData<*const P>,
 }
 
-impl<S, L, D, P> Drop for Texture<S, L, D, P>
+impl<S, D, P> Drop for Texture<S, D, P>
 where
-  S: ?Sized + TextureBackend<L, D, P>,
-  L: Layerable,
+  S: ?Sized + TextureBackend<D, P>,
   D: Dimensionable,
   P: Pixel,
 {
@@ -432,10 +472,9 @@ where
   }
 }
 
-impl<S, L, D, P> Texture<S, L, D, P>
+impl<S, D, P> Texture<S, D, P>
 where
-  S: ?Sized + TextureBackend<L, D, P>,
-  L: Layerable,
+  S: ?Sized + TextureBackend<D, P>,
   D: Dimensionable,
   P: Pixel,
 {

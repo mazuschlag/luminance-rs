@@ -13,8 +13,7 @@ use crate::gl33::GL33;
 use luminance::backend::texture::{Texture as TextureBackend, TextureBase};
 use luminance::pixel::{Pixel, PixelFormat};
 use luminance::texture::{
-  Dim, Dimensionable, GenMipmaps, Layerable, Layering, MagFilter, MinFilter, Sampler, TextureError,
-  Wrap,
+  Dim, Dimensionable, GenMipmaps, MagFilter, MinFilter, Sampler, TextureError, Wrap,
 };
 
 pub struct Texture {
@@ -28,10 +27,9 @@ unsafe impl TextureBase for GL33 {
   type TextureRepr = Texture;
 }
 
-unsafe impl<L, D, P> TextureBackend<L, D, P> for GL33
+unsafe impl<D, P> TextureBackend<D, P> for GL33
 where
   D: Dimensionable,
-  L: Layerable,
   P: Pixel,
 {
   unsafe fn new_texture(
@@ -41,14 +39,14 @@ where
     sampler: Sampler,
   ) -> Result<Self::TextureRepr, TextureError> {
     let mipmaps = mipmaps + 1; // + 1 prevent having 0 mipmaps
-    let target = opengl_target(L::layering(), D::dim());
+    let target = opengl_target(D::dim());
 
     let mut state = self.state.borrow_mut();
 
     let handle = state.generate_texture();
     state.bind_texture(target, handle);
 
-    create_texture::<L, D>(target, size, mipmaps, P::pixel_format(), sampler)?;
+    create_texture::<D>(target, size, mipmaps, P::pixel_format(), sampler)?;
 
     let texture = Texture {
       handle,
@@ -75,7 +73,7 @@ where
     size: D::Size,
     pixel: P::Encoding,
   ) -> Result<(), TextureError> {
-    <Self as TextureBackend<L, D, P>>::upload_part(
+    <Self as TextureBackend<D, P>>::upload_part(
       texture,
       gen_mipmaps,
       offset,
@@ -90,7 +88,7 @@ where
     size: D::Size,
     pixel: P::Encoding,
   ) -> Result<(), TextureError> {
-    <Self as TextureBackend<L, D, P>>::clear_part(texture, gen_mipmaps, D::ZERO_OFFSET, size, pixel)
+    <Self as TextureBackend<D, P>>::clear_part(texture, gen_mipmaps, D::ZERO_OFFSET, size, pixel)
   }
 
   unsafe fn upload_part(
@@ -104,7 +102,7 @@ where
 
     gfx_state.bind_texture(texture.target, texture.handle);
 
-    upload_texels::<L, D, P, P::Encoding>(texture.target, offset, size, texels)?;
+    upload_texels::<D, P, P::Encoding>(texture.target, offset, size, texels)?;
 
     if gen_mipmaps == GenMipmaps::Yes {
       gl::GenerateMipmap(texture.target);
@@ -121,13 +119,7 @@ where
     size: D::Size,
     texels: &[P::Encoding],
   ) -> Result<(), TextureError> {
-    <Self as TextureBackend<L, D, P>>::upload_part(
-      texture,
-      gen_mipmaps,
-      D::ZERO_OFFSET,
-      size,
-      texels,
-    )
+    <Self as TextureBackend<D, P>>::upload_part(texture, gen_mipmaps, D::ZERO_OFFSET, size, texels)
   }
 
   unsafe fn upload_part_raw(
@@ -141,7 +133,7 @@ where
 
     gfx_state.bind_texture(texture.target, texture.handle);
 
-    upload_texels::<L, D, P, P::RawEncoding>(texture.target, offset, size, texels)?;
+    upload_texels::<D, P, P::RawEncoding>(texture.target, offset, size, texels)?;
 
     if gen_mipmaps == GenMipmaps::Yes {
       gl::GenerateMipmap(texture.target);
@@ -158,7 +150,7 @@ where
     size: D::Size,
     texels: &[P::RawEncoding],
   ) -> Result<(), TextureError> {
-    <Self as TextureBackend<L, D, P>>::upload_part_raw(
+    <Self as TextureBackend<D, P>>::upload_part_raw(
       texture,
       gen_mipmaps,
       D::ZERO_OFFSET,
@@ -209,24 +201,18 @@ where
   }
 }
 
-pub(crate) fn opengl_target(l: Layering, d: Dim) -> GLenum {
-  match l {
-    Layering::Flat => match d {
-      Dim::Dim1 => gl::TEXTURE_1D,
-      Dim::Dim2 => gl::TEXTURE_2D,
-      Dim::Dim3 => gl::TEXTURE_3D,
-      Dim::Cubemap => gl::TEXTURE_CUBE_MAP,
-    },
-    Layering::Layered => match d {
-      Dim::Dim1 => gl::TEXTURE_1D_ARRAY,
-      Dim::Dim2 => gl::TEXTURE_2D_ARRAY,
-      Dim::Dim3 => unimplemented!("3D textures array not supported"),
-      Dim::Cubemap => gl::TEXTURE_CUBE_MAP_ARRAY,
-    },
+pub(crate) fn opengl_target(d: Dim) -> GLenum {
+  match d {
+    Dim::Dim1 => gl::TEXTURE_1D,
+    Dim::Dim2 => gl::TEXTURE_2D,
+    Dim::Dim3 => gl::TEXTURE_3D,
+    Dim::Cubemap => gl::TEXTURE_CUBE_MAP,
+    Dim::Dim1Array => gl::TEXTURE_1D_ARRAY,
+    Dim::Dim2Array => gl::TEXTURE_2D_ARRAY,
   }
 }
 
-pub(crate) unsafe fn create_texture<L, D>(
+pub(crate) unsafe fn create_texture<D>(
   target: GLenum,
   size: D::Size,
   mipmaps: usize,
@@ -234,12 +220,11 @@ pub(crate) unsafe fn create_texture<L, D>(
   sampler: Sampler,
 ) -> Result<(), TextureError>
 where
-  L: Layerable,
   D: Dimensionable,
 {
   set_texture_levels(target, mipmaps);
   apply_sampler_to_texture(target, sampler);
-  create_texture_storage::<L, D>(size, mipmaps, pf)
+  create_texture_storage::<D>(size, mipmaps, pf)
 }
 
 fn set_texture_levels(target: GLenum, mipmaps: usize) {
@@ -323,29 +308,29 @@ fn opengl_mag_filter(filter: MagFilter) -> GLenum {
   }
 }
 
-fn create_texture_storage<L, D>(
+fn create_texture_storage<D>(
   size: D::Size,
   mipmaps: usize,
   pf: PixelFormat,
 ) -> Result<(), TextureError>
 where
-  L: Layerable,
   D: Dimensionable,
 {
   match opengl_pixel_format(pf) {
     Some(glf) => {
       let (format, iformat, encoding) = glf;
 
-      match (L::layering(), D::dim()) {
+      match D::dim() {
         // 1D texture
-        (Layering::Flat, Dim::Dim1) => {
+        Dim::Dim1 => {
           create_texture_1d_storage(format, iformat, encoding, D::width(size), mipmaps);
           Ok(())
         }
 
         // 2D texture
-        (Layering::Flat, Dim::Dim2) => {
+        Dim::Dim2 => {
           create_texture_2d_storage(
+            gl::TEXTURE_2D,
             format,
             iformat,
             encoding,
@@ -357,8 +342,9 @@ where
         }
 
         // 3D texture
-        (Layering::Flat, Dim::Dim3) => {
+        Dim::Dim3 => {
           create_texture_3d_storage(
+            gl::TEXTURE_3D,
             format,
             iformat,
             encoding,
@@ -371,15 +357,39 @@ where
         }
 
         // cubemap
-        (Layering::Flat, Dim::Cubemap) => {
+        Dim::Cubemap => {
           create_cubemap_storage(format, iformat, encoding, D::width(size), mipmaps);
           Ok(())
         }
 
-        _ => Err(TextureError::TextureStorageCreationFailed(format!(
-          "unsupported texture OpenGL pixel format: {:?}",
-          glf
-        ))),
+        // 1D array texture
+        Dim::Dim1Array => {
+          create_texture_2d_storage(
+            gl::TEXTURE_1D_ARRAY,
+            format,
+            iformat,
+            encoding,
+            D::width(size),
+            D::height(size),
+            mipmaps,
+          );
+          Ok(())
+        }
+
+        // 2D array texture
+        Dim::Dim2Array => {
+          create_texture_3d_storage(
+            gl::TEXTURE_2D_ARRAY,
+            format,
+            iformat,
+            encoding,
+            D::width(size),
+            D::height(size),
+            D::depth(size),
+            mipmaps,
+          );
+          Ok(())
+        }
       }
     }
 
@@ -416,6 +426,7 @@ fn create_texture_1d_storage(
 }
 
 fn create_texture_2d_storage(
+  target: GLenum,
   format: GLenum,
   iformat: GLenum,
   encoding: GLenum,
@@ -430,7 +441,7 @@ fn create_texture_2d_storage(
 
     unsafe {
       gl::TexImage2D(
-        gl::TEXTURE_2D,
+        target,
         level as GLint,
         iformat as GLint,
         w as GLsizei,
@@ -445,6 +456,7 @@ fn create_texture_2d_storage(
 }
 
 fn create_texture_3d_storage(
+  target: GLenum,
   format: GLenum,
   iformat: GLenum,
   encoding: GLenum,
@@ -461,7 +473,7 @@ fn create_texture_3d_storage(
 
     unsafe {
       gl::TexImage3D(
-        gl::TEXTURE_3D,
+        target,
         level as GLint,
         iformat as GLint,
         w as GLsizei,
@@ -529,14 +541,13 @@ fn set_pack_alignment(skip_bytes: usize) {
 }
 
 // Upload texels into the texture’s memory. Becareful of the type of texels you send down.
-fn upload_texels<L, D, P, T>(
+fn upload_texels<D, P, T>(
   target: GLenum,
   off: D::Offset,
   size: D::Size,
   texels: &[T],
 ) -> Result<(), TextureError>
 where
-  L: Layerable,
   D: Dimensionable,
   P: Pixel,
 {
@@ -558,66 +569,92 @@ where
   set_unpack_alignment(skip_bytes);
 
   match opengl_pixel_format(pf) {
-    Some((format, _, encoding)) => match L::layering() {
-      Layering::Flat => match D::dim() {
-        Dim::Dim1 => unsafe {
-          gl::TexSubImage1D(
-            target,
-            0,
-            D::x_offset(off) as GLint,
-            D::width(size) as GLsizei,
-            format,
-            encoding,
-            texels.as_ptr() as *const c_void,
-          )
-        },
-
-        Dim::Dim2 => unsafe {
-          gl::TexSubImage2D(
-            target,
-            0,
-            D::x_offset(off) as GLint,
-            D::y_offset(off) as GLint,
-            D::width(size) as GLsizei,
-            D::height(size) as GLsizei,
-            format,
-            encoding,
-            texels.as_ptr() as *const c_void,
-          )
-        },
-
-        Dim::Dim3 => unsafe {
-          gl::TexSubImage3D(
-            target,
-            0,
-            D::x_offset(off) as GLint,
-            D::y_offset(off) as GLint,
-            D::z_offset(off) as GLint,
-            D::width(size) as GLsizei,
-            D::height(size) as GLsizei,
-            D::depth(size) as GLsizei,
-            format,
-            encoding,
-            texels.as_ptr() as *const c_void,
-          )
-        },
-
-        Dim::Cubemap => unsafe {
-          gl::TexSubImage2D(
-            gl::TEXTURE_CUBE_MAP_POSITIVE_X + D::z_offset(off),
-            0,
-            D::x_offset(off) as GLint,
-            D::y_offset(off) as GLint,
-            D::width(size) as GLsizei,
-            D::width(size) as GLsizei,
-            format,
-            encoding,
-            texels.as_ptr() as *const c_void,
-          )
-        },
+    Some((format, _, encoding)) => match D::dim() {
+      Dim::Dim1 => unsafe {
+        gl::TexSubImage1D(
+          target,
+          0,
+          D::x_offset(off) as GLint,
+          D::width(size) as GLsizei,
+          format,
+          encoding,
+          texels.as_ptr() as *const c_void,
+        );
       },
 
-      Layering::Layered => unimplemented!("Layering::Layered not implemented yet"),
+      Dim::Dim2 => unsafe {
+        gl::TexSubImage2D(
+          target,
+          0,
+          D::x_offset(off) as GLint,
+          D::y_offset(off) as GLint,
+          D::width(size) as GLsizei,
+          D::height(size) as GLsizei,
+          format,
+          encoding,
+          texels.as_ptr() as *const c_void,
+        );
+      },
+
+      Dim::Dim3 => unsafe {
+        gl::TexSubImage3D(
+          target,
+          0,
+          D::x_offset(off) as GLint,
+          D::y_offset(off) as GLint,
+          D::z_offset(off) as GLint,
+          D::width(size) as GLsizei,
+          D::height(size) as GLsizei,
+          D::depth(size) as GLsizei,
+          format,
+          encoding,
+          texels.as_ptr() as *const c_void,
+        );
+      },
+
+      Dim::Cubemap => unsafe {
+        gl::TexSubImage2D(
+          gl::TEXTURE_CUBE_MAP_POSITIVE_X + D::z_offset(off),
+          0,
+          D::x_offset(off) as GLint,
+          D::y_offset(off) as GLint,
+          D::width(size) as GLsizei,
+          D::width(size) as GLsizei,
+          format,
+          encoding,
+          texels.as_ptr() as *const c_void,
+        );
+      },
+
+      Dim::Dim1Array => unsafe {
+        gl::TexSubImage2D(
+          target,
+          0,
+          D::x_offset(off) as GLint,
+          D::y_offset(off) as GLint,
+          D::width(size) as GLsizei,
+          D::height(size) as GLsizei,
+          format,
+          encoding,
+          texels.as_ptr() as *const c_void,
+        );
+      },
+
+      Dim::Dim2Array => unsafe {
+        gl::TexSubImage3D(
+          target,
+          0,
+          D::x_offset(off) as GLint,
+          D::y_offset(off) as GLint,
+          D::z_offset(off) as GLint,
+          D::width(size) as GLsizei,
+          D::height(size) as GLsizei,
+          D::depth(size) as GLsizei,
+          format,
+          encoding,
+          texels.as_ptr() as *const c_void,
+        );
+      },
     },
 
     None => return Err(TextureError::UnsupportedPixelFormat(pf)),

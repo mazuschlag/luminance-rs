@@ -3,14 +3,13 @@ use crate::backend::texture::Texture as TextureBackend;
 use crate::context::GraphicsContext;
 use crate::framebuffer::FramebufferError;
 use crate::pixel::{DepthPixel, PixelFormat};
-use crate::texture::{Dimensionable, Layerable, Sampler};
+use crate::texture::{Dimensionable, Sampler};
 
 use crate::texture::Texture;
 
-pub trait DepthSlot<B, L, D>
+pub trait DepthSlot<B, D>
 where
-  B: ?Sized + Framebuffer<L, D>,
-  L: Layerable,
+  B: ?Sized + Framebuffer<D>,
   D: Dimensionable,
   D::Size: Copy,
 {
@@ -32,11 +31,10 @@ where
     C: GraphicsContext<Backend = B>;
 }
 
-impl<B, L, D> DepthSlot<B, L, D> for ()
+impl<B, D> DepthSlot<B, D> for ()
 where
-  B: ?Sized + Framebuffer<L, D>,
+  B: ?Sized + Framebuffer<D>,
   D::Size: Copy,
-  L: Layerable,
   D: Dimensionable,
 {
   type DepthTexture = ();
@@ -59,15 +57,14 @@ where
   }
 }
 
-impl<B, L, D, P> DepthSlot<B, L, D> for P
+impl<B, D, P> DepthSlot<B, D> for P
 where
-  B: ?Sized + Framebuffer<L, D> + TextureBackend<L, D, P>,
-  L: Layerable,
+  B: ?Sized + Framebuffer<D> + TextureBackend<D, P>,
   D: Dimensionable,
   D::Size: Copy,
   P: DepthPixel,
 {
-  type DepthTexture = Texture<B, L, D, P>;
+  type DepthTexture = Texture<B, D, P>;
 
   fn depth_format() -> Option<PixelFormat> {
     Some(P::pixel_format())

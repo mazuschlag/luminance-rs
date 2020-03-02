@@ -1,17 +1,16 @@
 //! Texture backend.
 
 use crate::pixel::Pixel;
-use crate::texture::{Dimensionable, GenMipmaps, Layerable, Sampler, TextureError};
+use crate::texture::{Dimensionable, GenMipmaps, Sampler, TextureError};
 
 /// The base texture trait.
 pub unsafe trait TextureBase {
   type TextureRepr;
 }
 
-pub unsafe trait Texture<L, D, P>: TextureBase
+pub unsafe trait Texture<D, P>: TextureBase
 where
   D: Dimensionable,
-  L: Layerable,
   P: Pixel,
 {
   unsafe fn new_texture(

@@ -4,7 +4,7 @@ use crate::backend::shading_gate::ShadingGate as ShadingGateBackend;
 use crate::backend::texture::{Texture, TextureBase};
 use crate::pipeline::{PipelineError, PipelineState};
 use crate::pixel::Pixel;
-use crate::texture::{Dimensionable, Layerable};
+use crate::texture::Dimensionable;
 
 pub unsafe trait PipelineBase: ShadingGateBackend + TextureBase {
   type PipelineRepr;
@@ -12,9 +12,8 @@ pub unsafe trait PipelineBase: ShadingGateBackend + TextureBase {
   unsafe fn new_pipeline(&mut self) -> Result<Self::PipelineRepr, PipelineError>;
 }
 
-pub unsafe trait Pipeline<L, D>: PipelineBase + FramebufferBackend<L, D>
+pub unsafe trait Pipeline<D>: PipelineBase + FramebufferBackend<D>
 where
-  L: Layerable,
   D: Dimensionable,
 {
   unsafe fn start_pipeline(
@@ -33,9 +32,8 @@ pub unsafe trait PipelineBuffer<T>: PipelineBase + Buffer<T> {
   ) -> Result<Self::BoundBufferRepr, PipelineError>;
 }
 
-pub unsafe trait PipelineTexture<L, D, P>: PipelineBase + Texture<L, D, P>
+pub unsafe trait PipelineTexture<D, P>: PipelineBase + Texture<D, P>
 where
-  L: Layerable,
   D: Dimensionable,
   P: Pixel,
 {
@@ -46,7 +44,6 @@ where
     texture: &Self::TextureRepr,
   ) -> Result<Self::BoundTextureRepr, PipelineError>
   where
-    L: Layerable,
     D: Dimensionable,
     P: Pixel;
 }

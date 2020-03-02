@@ -4,41 +4,38 @@ use crate::backend::color_slot::ColorSlot;
 use crate::backend::depth_slot::DepthSlot;
 use crate::backend::framebuffer::{Framebuffer as FramebufferBackend, FramebufferBackBuffer};
 use crate::context::GraphicsContext;
-use crate::texture::{Dim2, Dimensionable, Flat, Layerable, Sampler, TextureError};
+use crate::texture::{Dim2, Dimensionable, Sampler, TextureError};
 
-pub struct Framebuffer<B, L, D, CS, DS>
+pub struct Framebuffer<B, D, CS, DS>
 where
-  B: ?Sized + FramebufferBackend<L, D>,
-  L: Layerable,
+  B: ?Sized + FramebufferBackend<D>,
   D: Dimensionable,
-  CS: ColorSlot<B, L, D>,
-  DS: DepthSlot<B, L, D>,
+  CS: ColorSlot<B, D>,
+  DS: DepthSlot<B, D>,
 {
   pub(crate) repr: B::FramebufferRepr,
   color_slot: CS::ColorTextures,
   depth_slot: DS::DepthTexture,
 }
 
-impl<B, L, D, CS, DS> Drop for Framebuffer<B, L, D, CS, DS>
+impl<B, D, CS, DS> Drop for Framebuffer<B, D, CS, DS>
 where
-  B: ?Sized + FramebufferBackend<L, D>,
-  L: Layerable,
+  B: ?Sized + FramebufferBackend<D>,
   D: Dimensionable,
-  CS: ColorSlot<B, L, D>,
-  DS: DepthSlot<B, L, D>,
+  CS: ColorSlot<B, D>,
+  DS: DepthSlot<B, D>,
 {
   fn drop(&mut self) {
     unsafe { B::destroy_framebuffer(&mut self.repr) }
   }
 }
 
-impl<B, L, D, CS, DS> Framebuffer<B, L, D, CS, DS>
+impl<B, D, CS, DS> Framebuffer<B, D, CS, DS>
 where
-  B: ?Sized + FramebufferBackend<L, D>,
-  L: Layerable,
+  B: ?Sized + FramebufferBackend<D>,
   D: Dimensionable,
-  CS: ColorSlot<B, L, D>,
-  DS: DepthSlot<B, L, D>,
+  CS: ColorSlot<B, D>,
+  DS: DepthSlot<B, D>,
 {
   pub fn new<C>(
     ctx: &mut C,
@@ -79,9 +76,9 @@ where
   }
 }
 
-impl<B> Framebuffer<B, Flat, Dim2, (), ()>
+impl<B> Framebuffer<B, Dim2, (), ()>
 where
-  B: ?Sized + FramebufferBackend<Flat, Dim2> + FramebufferBackBuffer,
+  B: ?Sized + FramebufferBackend<Dim2> + FramebufferBackBuffer,
 {
   pub fn back_buffer<C>(
     ctx: &mut C,

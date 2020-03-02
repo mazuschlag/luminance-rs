@@ -12,7 +12,7 @@ use luminance::shader::{
   ProgramError, StageError, StageType, TessellationStages, Uniform, UniformType, UniformWarning,
   VertexAttribWarning,
 };
-use luminance::texture::{Dim, Dimensionable, Layerable};
+use luminance::texture::{Dim, Dimensionable};
 use luminance::vertex::Semantics;
 
 #[derive(Debug)]
@@ -330,6 +330,12 @@ fn check_types_match(name: &str, ty: UniformType, glty: GLuint) -> Result<(), Un
     UniformType::ISampler3D if glty != gl::INT_SAMPLER_3D => {
       Err(UniformWarning::type_mismatch(name, ty))
     }
+    UniformType::ISampler1DArray if glty != gl::INT_SAMPLER_1D_ARRAY => {
+      Err(UniformWarning::type_mismatch(name, ty))
+    }
+    UniformType::ISampler2DArray if glty != gl::INT_SAMPLER_2D_ARRAY => {
+      Err(UniformWarning::type_mismatch(name, ty))
+    }
     UniformType::UISampler1D if glty != gl::UNSIGNED_INT_SAMPLER_1D => {
       Err(UniformWarning::type_mismatch(name, ty))
     }
@@ -339,6 +345,12 @@ fn check_types_match(name: &str, ty: UniformType, glty: GLuint) -> Result<(), Un
     UniformType::UISampler3D if glty != gl::UNSIGNED_INT_SAMPLER_3D => {
       Err(UniformWarning::type_mismatch(name, ty))
     }
+    UniformType::UISampler1DArray if glty != gl::UNSIGNED_INT_SAMPLER_1D_ARRAY => {
+      Err(UniformWarning::type_mismatch(name, ty))
+    }
+    UniformType::UISampler2DArray if glty != gl::UNSIGNED_INT_SAMPLER_2D_ARRAY => {
+      Err(UniformWarning::type_mismatch(name, ty))
+    }
     UniformType::Sampler1D if glty != gl::SAMPLER_1D => {
       Err(UniformWarning::type_mismatch(name, ty))
     }
@@ -346,6 +358,12 @@ fn check_types_match(name: &str, ty: UniformType, glty: GLuint) -> Result<(), Un
       Err(UniformWarning::type_mismatch(name, ty))
     }
     UniformType::Sampler3D if glty != gl::SAMPLER_3D => {
+      Err(UniformWarning::type_mismatch(name, ty))
+    }
+    UniformType::Sampler1DArray if glty != gl::SAMPLER_1D_ARRAY => {
+      Err(UniformWarning::type_mismatch(name, ty))
+    }
+    UniformType::Sampler2DArray if glty != gl::SAMPLER_2D_ARRAY => {
       Err(UniformWarning::type_mismatch(name, ty))
     }
     UniformType::ICubemap if glty != gl::INT_SAMPLER_CUBE => {
@@ -633,9 +651,8 @@ unsafe impl Uniformable<GL33> for BoundBuffer {
   }
 }
 
-unsafe impl<L, D, P> Uniformable<GL33> for BoundTexture<L, D, P>
+unsafe impl<D, P> Uniformable<GL33> for BoundTexture<D, P>
 where
-  L: Layerable,
   D: Dimensionable,
   P: Pixel,
 {
@@ -664,6 +681,18 @@ where
       (PixelType::Integral, Dim::Cubemap) => UniformType::ICubemap,
       (PixelType::Unsigned, Dim::Cubemap) => UniformType::UICubemap,
       (PixelType::Floating, Dim::Cubemap) => UniformType::Cubemap,
+
+      (PixelType::NormIntegral, Dim::Dim1Array) => UniformType::Sampler1DArray,
+      (PixelType::NormUnsigned, Dim::Dim1Array) => UniformType::Sampler1DArray,
+      (PixelType::Integral, Dim::Dim1Array) => UniformType::ISampler1DArray,
+      (PixelType::Unsigned, Dim::Dim1Array) => UniformType::UISampler1DArray,
+      (PixelType::Floating, Dim::Dim1Array) => UniformType::Sampler1DArray,
+
+      (PixelType::NormIntegral, Dim::Dim2Array) => UniformType::Sampler2DArray,
+      (PixelType::NormUnsigned, Dim::Dim2Array) => UniformType::Sampler2DArray,
+      (PixelType::Integral, Dim::Dim2Array) => UniformType::ISampler2DArray,
+      (PixelType::Unsigned, Dim::Dim2Array) => UniformType::UISampler2DArray,
+      (PixelType::Floating, Dim::Dim2Array) => UniformType::Sampler2DArray,
     }
   }
 
