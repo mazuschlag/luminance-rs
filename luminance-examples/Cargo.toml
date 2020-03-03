@@ -26,11 +26,11 @@ edition = "2018"
 [[bin]]
 name = "hello-world"
 path = "src/hello-world.rs"
-#
-# [[bin]]
-# name = "hello-world-glutin"
-# path = "src/hello-world-glutin.rs"
-#
+
+[[bin]]
+name = "hello-world-glutin"
+path = "src/hello-world-glutin.rs"
+
 # [[bin]]
 # name = "offscreen"
 # path = "src/offscreen.rs"
@@ -68,7 +68,7 @@ path = "src/hello-world.rs"
 luminance = "1.0.0-rc.1"
 luminance-derive = "1.0.0-rc.1"
 luminance-glfw = "1.0.0-rc.1"
-#luminance-glutin = "0.9"
+luminance-glutin = "1.0.0-rc.1"
 luminance-windowing = "1.0.0-rc.1"
 glfw = "0.36"
-#glutin = "0.23"
+glutin = "0.23"

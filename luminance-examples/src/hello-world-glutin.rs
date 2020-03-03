@@ -16,7 +16,7 @@ use glutin::{
 use luminance::context::GraphicsContext;
 use luminance::pipeline::PipelineState;
 use luminance::render_state::RenderState;
-use luminance::shader::program::Program;
+use luminance::shader::Program;
 use luminance::tess::{Mode, TessBuilder};
 use luminance_derive::{Semantics, Vertex};
 use luminance_glutin::GlutinSurface;
@@ -197,44 +197,44 @@ fn main() {
 
   // We need a program to “shade” our triangles and to tell luminance which is the input vertex
   // type, and we’re not interested in the other two type variables for this sample.
-  let program = Program::<Semantics, (), ()>::from_strings(None, VS, None, FS)
+  let mut program = Program::<_, Semantics, (), ()>::from_strings(&mut surface, VS, None, None, FS)
     .expect("program creation")
     .ignore_warnings();
 
   // Create tessellation for direct geometry; that is, tessellation that will render vertices by
   // taking one after another in the provided slice.
   let direct_triangles = TessBuilder::new(&mut surface)
-    .add_vertices(TRI_VERTICES)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(TRI_VERTICES))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   // Create indexed tessellation; that is, the vertices will be picked by using the indexes provided
   // by the second slice and this indexes will reference the first slice (useful not to duplicate
   // vertices on more complex objects than just two triangles).
   let indexed_triangles = TessBuilder::new(&mut surface)
-    .add_vertices(TRI_VERTICES)
-    .set_indices(TRI_INDICES)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(TRI_VERTICES))
+    .and_then(|b| b.set_indices(TRI_INDICES))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   // Create direct, deinterleaved tesselations; such tessellations allow to separate vertex
   // attributes in several contiguous regions of memory.
   let direct_deinterleaved_triangles = TessBuilder::new(&mut surface)
-    .add_vertices(TRI_DEINT_POS_VERTICES)
-    .add_vertices(TRI_DEINT_COLOR_VERTICES)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(TRI_DEINT_POS_VERTICES))
+    .and_then(|b| b.add_vertices(TRI_DEINT_COLOR_VERTICES))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   // Create indexed, deinterleaved tessellations; have your cake and fucking eat it, now.
   let indexed_deinterleaved_triangles = TessBuilder::new(&mut surface)
-    .add_vertices(TRI_DEINT_POS_VERTICES)
-    .add_vertices(TRI_DEINT_COLOR_VERTICES)
-    .set_indices(TRI_INDICES)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(TRI_DEINT_POS_VERTICES))
+    .and_then(|b| b.add_vertices(TRI_DEINT_COLOR_VERTICES))
+    .and_then(|b| b.set_indices(TRI_INDICES))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   // The back buffer, which we will make our render into (we make it mutable so that we can change
@@ -286,12 +286,12 @@ fn main() {
       Event::RedrawRequested(_) => {
         // Create a new dynamic pipeline that will render to the back buffer and must clear it with
         // pitch black prior to do any render to it.
-        surface.pipeline_builder().pipeline(
+        let render = surface.pipeline_gate().pipeline(
           &back_buffer,
           &PipelineState::default(),
           |_, mut shd_gate| {
             // Start shading with our program.
-            shd_gate.shade(&program, |_, mut rdr_gate| {
+            shd_gate.shade(&mut program, |_, mut rdr_gate| {
               // Start rendering things with the default render state provided by luminance.
               rdr_gate.render(&RenderState::default(), |mut tess_gate| {
                 // Pick the right tessellation to use depending on the mode chosen.
@@ -311,7 +311,9 @@ fn main() {
 
         // Finally, swap the backbuffer with the frontbuffer in order to render our triangles onto your
         // screen.
-        surface.swap_buffers();
+        if render.is_ok() {
+          surface.swap_buffers();
+        }
       }
       _ => {}
     };
