@@ -10,9 +10,12 @@ pub unsafe trait Uniformable<S>
 where
   S: ?Sized + Shader,
 {
+  /// Proxy type used to phantom type a [`Uniform`].
+  type Proxy: ?Sized;
+
   unsafe fn ty() -> UniformType;
 
-  unsafe fn update(&self, program: &mut S::ProgramRepr, uniform: &mut Uniform<Self>);
+  unsafe fn update(self, program: &mut S::ProgramRepr, uniform: &mut Uniform<Self::Proxy>);
 }
 
 pub unsafe trait Shader {
