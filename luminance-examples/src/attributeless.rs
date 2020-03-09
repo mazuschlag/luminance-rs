@@ -8,42 +8,50 @@
 //!
 //! https://docs.rs/luminance
 
+use glfw::{Action, Context as _, Key, WindowEvent};
 use luminance::context::GraphicsContext as _;
 use luminance::pipeline::PipelineState;
 use luminance::render_state::RenderState;
-use luminance::shader::program::Program;
-use luminance::tess::{Mode, TessBuilder};
-use luminance_glfw::{Action, GlfwSurface, Key, Surface, WindowDim, WindowEvent, WindowOpt};
+use luminance::shader::Program;
+use luminance::tess::Mode;
+use luminance::tess::TessBuilder;
+use luminance_derive::{Semantics, Vertex};
+use luminance_glfw::GlfwSurface;
+use luminance_windowing::{WindowDim, WindowOpt};
 
 const VS: &'static str = include_str!("attributeless-vs.glsl");
 const FS: &'static str = include_str!("simple-fs.glsl");
 
 fn main() {
-  let mut surface = GlfwSurface::new(
-    WindowDim::Windowed(960, 540),
+  let mut surface = GlfwSurface::new_gl33(
+    WindowDim::Windowed {
+      width: 960,
+      height: 540,
+    },
     "Hello, world!",
     WindowOpt::default(),
   )
   .expect("GLFW surface creation");
 
   // we don’t use a Vertex type anymore (i.e. attributeless, so we use the unit () type)
-  let program = Program::<(), (), ()>::from_strings(None, VS, None, FS)
+  let mut program = Program::<_, (), (), ()>::from_strings(&mut surface, VS, None, None, FS)
     .expect("program creation")
     .ignore_warnings();
 
   // yet, we still need to tell luminance to render a certain number of vertices (even if we send no
   // attributes / data); in our case, we’ll just render a triangle, which has three vertices
   let tess = TessBuilder::new(&mut surface)
-    .set_vertex_nb(3)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.set_vertex_nb(3))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   let mut back_buffer = surface.back_buffer().unwrap();
   let mut resize = false;
 
   'app: loop {
-    for event in surface.poll_events() {
+    surface.window.glfw.poll_events();
+    for (_, event) in surface.events_rx.try_iter() {
       match event {
         WindowEvent::Close | WindowEvent::Key(Key::Escape, _, Action::Release, _) => break 'app,
 
@@ -60,11 +68,11 @@ fn main() {
       resize = true;
     }
 
-    surface.pipeline_builder().pipeline(
+    let render = surface.pipeline_gate().pipeline(
       &back_buffer,
       &PipelineState::default(),
       |_, mut shd_gate| {
-        shd_gate.shade(&program, |_, mut rdr_gate| {
+        shd_gate.shade(&mut program, |_, mut rdr_gate| {
           rdr_gate.render(&RenderState::default(), |mut tess_gate| {
             // render the tessellation to the surface the regular way and let the vertex shader’s
             // magic do the rest!
@@ -74,6 +82,10 @@ fn main() {
       },
     );
 
-    surface.swap_buffers();
+    if render.is_ok() {
+      surface.window.swap_buffers();
+    } else {
+      break 'app;
+    }
   }
 }
