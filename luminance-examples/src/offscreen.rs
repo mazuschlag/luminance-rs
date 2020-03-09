@@ -8,16 +8,19 @@
 mod common;
 
 use crate::common::{Semantics, Vertex, VertexColor, VertexPosition};
+use glfw::{Action, Context as _, Key, WindowEvent};
 use luminance::context::GraphicsContext as _;
 use luminance::framebuffer::Framebuffer;
 use luminance::pipeline::{BoundTexture, PipelineState};
 use luminance::pixel::{Floating, RGBA32F};
 use luminance::render_state::RenderState;
-use luminance::shader::program::{BuiltProgram, Program, Uniform};
+use luminance::shader::{BuiltProgram, Program, Uniform};
 use luminance::tess::{Mode, TessBuilder};
 use luminance::texture::{Dim2, Sampler};
 use luminance_derive::UniformInterface;
-use luminance_glfw::{Action, GlfwSurface, Key, Surface, WindowDim, WindowEvent, WindowOpt};
+use luminance_derive::{Semantics, Vertex};
+use luminance_glfw::GlfwSurface;
+use luminance_windowing::{WindowDim, WindowOpt};
 
 // we get the shader at compile time from local files
 const VS: &'static str = include_str!("simple-vs.glsl");
@@ -49,24 +52,28 @@ const TRI_VERTICES: [Vertex; 3] = [
 struct ShaderInterface {
   // we only need the source texture (from the framebuffer) to fetch from
   #[uniform(unbound, name = "source_texture")]
-  texture: Uniform<&'static BoundTexture<'static, Dim2, Floating>>,
+  texture: Uniform<BoundTexture<'static, Dim2, Floating>>,
 }
 
 fn main() {
   let mut surface = GlfwSurface::new(
-    WindowDim::Windowed(960, 540),
+    WindowDim::Windowed {
+      width: 960,
+      height: 540,
+    },
     "Hello, world!",
     WindowOpt::default(),
   )
   .expect("GLFW surface creation");
 
-  let program = Program::<Semantics, (), ()>::from_strings(None, VS, None, FS)
+  let mut program = Program::<_, Semantics, (), ()>::from_strings(VS, None, None, FS)
     .expect("program creation")
     .ignore_warnings();
+
   let BuiltProgram {
     program: copy_program,
     warnings,
-  } = Program::<(), (), ShaderInterface>::from_strings(None, COPY_VS, None, COPY_FS)
+  } = Program::<_, (), (), ShaderInterface>::from_strings(COPY_VS, None, None, COPY_FS)
     .expect("copy program creation");
 
   for warning in &warnings {
@@ -74,24 +81,25 @@ fn main() {
   }
 
   let triangle = TessBuilder::new(&mut surface)
-    .add_vertices(TRI_VERTICES)
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(TRI_VERTICES))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   // we’ll need an attributeless quad to fetch in full screen
   let quad = TessBuilder::new(&mut surface)
-    .set_vertex_nb(4)
-    .set_mode(Mode::TriangleFan)
-    .build()
+    .and_then(|b| b.set_vertex_nb(4))
+    .and_then(|b| b.set_mode(Mode::TriangleFan))
+    .and_then(|b| b.build())
     .unwrap();
 
   // “screen“ we want to render into our offscreen render
   let mut back_buffer = surface.back_buffer().unwrap();
+
   // offscreen buffer that we will render in the first place
   let size = surface.size();
   let mut offscreen_buffer =
-    Framebuffer::<Dim2, RGBA32F, ()>::new(&mut surface, size, 0, Sampler::default())
+    Framebuffer::<_, Dim2, RGBA32F, ()>::new(&mut surface, size, 0, Sampler::default())
       .expect("framebuffer creation");
 
   // hack to update the offscreen buffer if needed; this is needed because we cannot update the
@@ -100,7 +108,8 @@ fn main() {
 
   'app: loop {
     // for all the events on the surface
-    for event in surface.poll_events() {
+    surface.window.glfw.poll_events();
+    for (_, event) in surface.events_rx.try_iter() {
       match event {
         WindowEvent::Close | WindowEvent::Key(Key::Escape, _, Action::Release, _) => break 'app,
 
@@ -116,6 +125,7 @@ fn main() {
     if resize {
       // simply ask another backbuffer at the right dimension (no allocation / reallocation)
       back_buffer = surface.back_buffer().unwrap();
+
       // ditto for the offscreen framebuffer
       let size = surface.size();
       offscreen_buffer = Framebuffer::new(&mut surface, size, 0, Sampler::default())
@@ -125,10 +135,10 @@ fn main() {
     }
 
     // we get an object to create pipelines (we’ll need two)
-    let mut builder = surface.pipeline_builder();
+    let mut builder = surface.pipeline_gate();
 
     // render the triangle in the offscreen framebuffer first
-    builder.pipeline(
+    let render = builder.pipeline(
       &offscreen_buffer,
       &PipelineState::default(),
       |_, mut shd_gate| {
@@ -141,8 +151,12 @@ fn main() {
       },
     );
 
+    if render.is_err() {
+      break 'app;
+    }
+
     // read from the offscreen framebuffer and output it into the back buffer
-    builder.pipeline(
+    let render = builder.pipeline(
       &back_buffer,
       &PipelineState::default(),
       |pipeline, mut shd_gate| {
@@ -164,6 +178,10 @@ fn main() {
 
     // finally, swap the backbuffer with the frontbuffer in order to render our triangles onto your
     // screen
-    surface.swap_buffers();
+    if render.is_ok() {
+      surface.swap_buffers();
+    } else {
+      break 'app;
+    }
   }
 }

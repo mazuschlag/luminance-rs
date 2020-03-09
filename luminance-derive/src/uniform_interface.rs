@@ -99,7 +99,7 @@ pub(crate) fn generate_uniform_interface_impl(
           fn uniform_interface<'a>(
             builder: &mut luminance::shader::UniformBuilder<'a, S>,
             _: &mut ()
-          ) -> Result<Self, luminance::backend::shader::UniformWarning> {
+          ) -> Result<Self, luminance::shader::UniformWarning> {
             #(#field_decls)*
 
             let iface = #ident { #(#field_names,)* };

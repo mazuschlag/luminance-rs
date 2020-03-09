@@ -777,8 +777,8 @@ where
     <B::BoundBufferRepr as Uniformable<B>>::ty()
   }
 
-  unsafe fn update(self, program: &mut B::ProgramRepr, uniform: &mut Uniform<Self>) {
-    <B::BoundBufferRepr as Uniformable<B>>::update(self.repr, program, &mut uniform.retype())
+  unsafe fn update(&self, program: &mut B::ProgramRepr, uniform: &mut Uniform<Self>) {
+    <B::BoundBufferRepr as Uniformable<B>>::update(&self.repr, program, &mut uniform.retype())
   }
 }
 
@@ -793,7 +793,7 @@ where
     <B::BoundTextureRepr as Uniformable<B>>::ty()
   }
 
-  unsafe fn update(self, program: &mut B::ProgramRepr, uniform: &mut Uniform<Self>) {
-    <B::BoundTextureRepr as Uniformable<B>>::update(self.repr, program, &mut uniform.retype())
+  unsafe fn update(&self, program: &mut B::ProgramRepr, uniform: &mut Uniform<Self>) {
+    <B::BoundTextureRepr as Uniformable<B>>::update(&self.repr, program, &mut uniform.retype())
   }
 }
