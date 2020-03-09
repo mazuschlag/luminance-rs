@@ -15,7 +15,6 @@ use luminance::render_state::RenderState;
 use luminance::shader::Program;
 use luminance::tess::Mode;
 use luminance::tess::TessBuilder;
-use luminance_derive::{Semantics, Vertex};
 use luminance_glfw::GlfwSurface;
 use luminance_windowing::{WindowDim, WindowOpt};
 
