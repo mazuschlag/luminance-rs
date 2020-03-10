@@ -197,7 +197,10 @@ where
   _t: PhantomData<*const T>,
 }
 
-impl<T> Uniform<T> {
+impl<T> Uniform<T>
+where
+  T: ?Sized,
+{
   pub unsafe fn new(index: i32) -> Self {
     Uniform {
       index,
