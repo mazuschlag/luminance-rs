@@ -34,11 +34,11 @@ path = "src/hello-world-glutin.rs"
 [[bin]]
 name = "offscreen"
 path = "src/offscreen.rs"
-#
-# [[bin]]
-# name = "query-texture-texels"
-# path = "src/query-texture-texels.rs"
-#
+
+[[bin]]
+name = "query-texture-texels"
+path = "src/query-texture-texels.rs"
+
 # [[bin]]
 # name = "render-state"
 # path = "src/render-state.rs"
@@ -64,7 +64,7 @@ path = "src/offscreen.rs"
 # path = "src/vertex-instancing.rs"
 
 [dependencies]
-#image = "0.22"
+image = "0.23"
 luminance = "1.0.0-rc.1"
 luminance-derive = "1.0.0-rc.1"
 luminance-glfw = "1.0.0-rc.1"
