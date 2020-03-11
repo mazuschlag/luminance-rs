@@ -557,10 +557,10 @@ where
     unsafe { S::upload_raw(&mut self.repr, gen_mipmaps, self.size, texels) }
   }
 
-  pub fn get_raw_texels(&mut self) -> Result<Vec<P::RawEncoding>, TextureError>
+  pub fn get_raw_texels(&self) -> Result<Vec<P::RawEncoding>, TextureError>
   where
     P::RawEncoding: Copy + Default,
   {
-    unsafe { S::get_raw_texels(&mut self.repr, self.size) }
+    unsafe { S::get_raw_texels(&self.repr, self.size) }
   }
 }
