@@ -14,15 +14,15 @@ edition = "2018"
 [[bin]]
 name = "attributeless"
 path = "src/attributeless.rs"
-#
+
 # [[bin]]
 # name = "displacement-map"
 # path = "src/displacement-map.rs"
-#
-# [[bin]]
-# name = "dynamic-uniform-interface"
-# path = "src/dynamic-uniform-interface.rs"
-#
+
+[[bin]]
+name = "dynamic-uniform-interface"
+path = "src/dynamic-uniform-interface.rs"
+
 [[bin]]
 name = "hello-world"
 path = "src/hello-world.rs"
