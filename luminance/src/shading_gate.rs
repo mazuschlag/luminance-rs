@@ -21,7 +21,7 @@ where
   where
     Sem: Semantics,
     Uni: UniformInterface<C::Backend>,
-    F: for<'b> FnOnce(ProgramInterface<'b, C::Backend, Uni>, RenderGate<'b, C>),
+    F: for<'b> FnOnce(ProgramInterface<'b, C::Backend>, &'b Uni, RenderGate<'b, C>),
   {
     unsafe {
       self.ctx.backend().apply_shader_program(&mut program.repr);
@@ -30,9 +30,8 @@ where
     let render_gate = RenderGate { ctx: self.ctx };
     let program_interface = ProgramInterface {
       program: &mut program.repr,
-      uni: &program.uni,
     };
 
-    f(program_interface, render_gate);
+    f(program_interface, &program.uni, render_gate);
   }
 }

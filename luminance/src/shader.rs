@@ -2,7 +2,6 @@
 
 use std::fmt;
 use std::marker::PhantomData;
-use std::ops::Deref;
 
 use crate::backend::shader::{Shader, Uniformable};
 use crate::context::GraphicsContext;
@@ -484,26 +483,14 @@ where
   }
 }
 
-pub struct ProgramInterface<'a, S, Uni>
+pub struct ProgramInterface<'a, S>
 where
   S: ?Sized + Shader,
 {
   pub(crate) program: &'a mut S::ProgramRepr,
-  pub(crate) uni: &'a Uni,
 }
 
-impl<'a, S, Uni> Deref for ProgramInterface<'a, S, Uni>
-where
-  S: ?Sized + Shader,
-{
-  type Target = Uni;
-
-  fn deref(&self) -> &Self::Target {
-    self.uni
-  }
-}
-
-impl<'a, S, Uni> ProgramInterface<'a, S, Uni>
+impl<'a, S> ProgramInterface<'a, S>
 where
   S: ?Sized + Shader,
 {

@@ -71,7 +71,7 @@ fn main() {
       &back_buffer,
       &PipelineState::default(),
       |_, mut shd_gate| {
-        shd_gate.shade(&mut program, |_, mut rdr_gate| {
+        shd_gate.shade(&mut program, |_, _, mut rdr_gate| {
           rdr_gate.render(&RenderState::default(), |mut tess_gate| {
             // render the tessellation to the surface the regular way and let the vertex shader’s
             // magic do the rest!

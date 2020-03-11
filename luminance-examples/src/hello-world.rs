@@ -276,7 +276,7 @@ fn main() {
       &PipelineState::default(),
       |_, mut shd_gate| {
         // Start shading with our program.
-        shd_gate.shade(&mut program, |_, mut rdr_gate| {
+        shd_gate.shade(&mut program, |_, _, mut rdr_gate| {
           // Start rendering things with the default render state provided by luminance.
           rdr_gate.render(&RenderState::default(), |mut tess_gate| {
             // Pick the right tessellation to use depending on the mode chosen.

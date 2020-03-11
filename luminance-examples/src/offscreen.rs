@@ -11,14 +11,13 @@ use crate::common::{Semantics, Vertex, VertexColor, VertexPosition};
 use glfw::{Action, Context as _, Key, WindowEvent};
 use luminance::context::GraphicsContext as _;
 use luminance::framebuffer::Framebuffer;
-use luminance::pipeline::{BoundTexture, PipelineState, TextureBinding};
+use luminance::pipeline::{PipelineState, TextureBinding};
 use luminance::pixel::{Floating, RGBA32F};
 use luminance::render_state::RenderState;
 use luminance::shader::{BuiltProgram, Program, Uniform};
 use luminance::tess::{Mode, TessBuilder};
 use luminance::texture::{Dim2, Sampler};
 use luminance_derive::UniformInterface;
-use luminance_derive::{Semantics, Vertex};
 use luminance_glfw::GlfwSurface;
 use luminance_windowing::{WindowDim, WindowOpt};
 
@@ -148,7 +147,7 @@ fn main() {
       &offscreen_buffer,
       &PipelineState::default(),
       |_, mut shd_gate| {
-        shd_gate.shade(&mut program, |_, mut rdr_gate| {
+        shd_gate.shade(&mut program, |_, _, mut rdr_gate| {
           rdr_gate.render(&RenderState::default(), |mut tess_gate| {
             // we render the triangle here by asking for the whole triangle
             tess_gate.render(&triangle);
@@ -171,9 +170,9 @@ fn main() {
           .bind_texture(offscreen_buffer.color_slot())
           .unwrap();
 
-        shd_gate.shade(&mut copy_program, |mut iface, mut rdr_gate| {
+        shd_gate.shade(&mut copy_program, |mut iface, uni, mut rdr_gate| {
           // we update the texture with the bound texture
-          iface.set(&iface.texture, bound_texture.binding());
+          iface.set(&uni.texture, bound_texture.binding());
 
           rdr_gate.render(&RenderState::default(), |mut tess_gate| {
             // this will render the attributeless quad with the offscreen framebuffer color slot
