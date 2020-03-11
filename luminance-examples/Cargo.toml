@@ -39,10 +39,10 @@ path = "src/offscreen.rs"
 name = "query-texture-texels"
 path = "src/query-texture-texels.rs"
 
-# [[bin]]
-# name = "render-state"
-# path = "src/render-state.rs"
-#
+[[bin]]
+name = "render-state"
+path = "src/render-state.rs"
+
 # [[bin]]
 # name = "shader-uniforms-adapt"
 # path = "src/shader-uniforms-adapt.rs"
@@ -50,11 +50,11 @@ path = "src/query-texture-texels.rs"
 # [[bin]]
 # name = "shader-uniforms"
 # path = "src/shader-uniforms.rs"
-#
-# [[bin]]
-# name = "sliced-tess"
-# path = "src/sliced-tess.rs"
-#
+
+[[bin]]
+name = "sliced-tess"
+path = "src/sliced-tess.rs"
+
 # [[bin]]
 # name = "texture"
 # path = "src/texture.rs"

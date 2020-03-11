@@ -12,13 +12,15 @@
 mod common;
 
 use crate::common::{Semantics, Vertex, VertexColor, VertexPosition};
+use glfw::{Action, Context as _, Key, WindowEvent};
 use luminance::blending::{Equation, Factor};
 use luminance::context::GraphicsContext as _;
 use luminance::pipeline::PipelineState;
 use luminance::render_state::RenderState;
-use luminance::shader::program::Program;
+use luminance::shader::Program;
 use luminance::tess::{Mode, TessBuilder};
-use luminance_glfw::{Action, GlfwSurface, Key, Surface, WindowDim, WindowEvent, WindowOpt};
+use luminance_glfw::GlfwSurface;
+use luminance_windowing::{WindowDim, WindowOpt};
 
 const VS: &'static str = include_str!("simple-vs.glsl");
 const FS: &'static str = include_str!("simple-fs.glsl");
@@ -79,27 +81,30 @@ fn toggle_blending(blending: Blending) -> Blending {
 }
 
 fn main() {
-  let mut surface = GlfwSurface::new(
-    WindowDim::Windowed(960, 540),
+  let mut surface = GlfwSurface::new_gl33(
+    WindowDim::Windowed {
+      width: 960,
+      height: 540,
+    },
     "Hello, world!",
     WindowOpt::default(),
   )
   .expect("GLFW surface creation");
 
-  let program = Program::<Semantics, (), ()>::from_strings(None, VS, None, FS)
+  let mut program = Program::<_, Semantics, (), ()>::from_strings(&mut surface, VS, None, None, FS)
     .expect("program creation")
     .ignore_warnings();
 
   // create a red and blue triangles
   let red_triangle = TessBuilder::new(&mut surface)
-    .add_vertices(&TRI_RED_BLUE_VERTICES[0..3])
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(&TRI_RED_BLUE_VERTICES[0..3]))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
   let blue_triangle = TessBuilder::new(&mut surface)
-    .add_vertices(&TRI_RED_BLUE_VERTICES[3..6])
-    .set_mode(Mode::Triangle)
-    .build()
+    .and_then(|b| b.add_vertices(&TRI_RED_BLUE_VERTICES[3..6]))
+    .and_then(|b| b.set_mode(Mode::Triangle))
+    .and_then(|b| b.build())
     .unwrap();
 
   let mut back_buffer = surface.back_buffer().unwrap();
@@ -111,7 +116,8 @@ fn main() {
   let mut resize = false;
 
   'app: loop {
-    for event in surface.poll_events() {
+    surface.window.glfw.poll_events();
+    for (_, event) in surface.events_rx.try_iter() {
       match event {
         WindowEvent::Close | WindowEvent::Key(Key::Escape, _, Action::Release, _) => break 'app,
 
@@ -138,18 +144,17 @@ fn main() {
       resize = false;
     }
 
-    surface.pipeline_builder().pipeline(
+    let render = surface.pipeline_gate().pipeline(
       &back_buffer,
       &PipelineState::default(),
       |_, mut shd_gate| {
-        shd_gate.shade(&program, |_, mut rdr_gate| {
+        shd_gate.shade(&mut program, |_, _, mut rdr_gate| {
           let render_state = RenderState::default()
-
-          // let’s disable the depth test so that every fragment (i.e. pixels) will be rendered to every
-          // time we have to draw a part of a triangle
-          .set_depth_test(None)
-          // set the blending we decided earlier
-          .set_blending(blending);
+            // let’s disable the depth test so that every fragment (i.e. pixels) will be rendered to every
+            // time we have to draw a part of a triangle
+            .set_depth_test(None)
+            // set the blending we decided earlier
+            .set_blending(blending);
 
           rdr_gate.render(&render_state, |mut tess_gate| match depth_method {
             DepthMethod::Under => {
@@ -166,6 +171,10 @@ fn main() {
       },
     );
 
-    surface.swap_buffers();
+    if render.is_ok() {
+      surface.window.swap_buffers();
+    } else {
+      break 'app;
+    }
   }
 }
