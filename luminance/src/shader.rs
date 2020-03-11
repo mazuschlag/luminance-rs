@@ -507,6 +507,13 @@ impl<'a, S, Uni> ProgramInterface<'a, S, Uni>
 where
   S: ?Sized + Shader,
 {
+  pub fn set<T>(&mut self, uniform: &Uniform<T>, value: T)
+  where
+    T: Uniformable<S>,
+  {
+    unsafe { T::update(value, self.program, uniform) };
+  }
+
   pub fn query(&'a mut self) -> Result<UniformBuilder<'a, S>, ProgramError> {
     unsafe {
       S::new_uniform_builder(&mut self.program).map(|repr| UniformBuilder {

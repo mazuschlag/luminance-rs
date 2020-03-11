@@ -231,12 +231,12 @@ where
   }
 }
 
-pub struct TextureBinding<D, P> {
+pub struct TextureBinding<D, S> {
   binding: u32,
-  _phantom: PhantomData<*const (D, P)>,
+  _phantom: PhantomData<*const (D, S)>,
 }
 
-impl<D, P> TextureBinding<D, P> {
+impl<D, S> TextureBinding<D, S> {
   pub fn binding(self) -> u32 {
     self.binding
   }
@@ -258,7 +258,7 @@ where
   D: Dimensionable,
   P: Pixel,
 {
-  pub fn binding(&self) -> TextureBinding<D, P> {
+  pub fn binding(&self) -> TextureBinding<D, P::SamplerType> {
     let binding = unsafe { B::texture_binding(&self.repr) };
     TextureBinding {
       binding,

@@ -66,15 +66,16 @@ fn main() {
   )
   .expect("GLFW surface creation");
 
-  let mut program = Program::<_, Semantics, (), ()>::from_strings(VS, None, None, FS)
+  let mut program = Program::<_, Semantics, (), ()>::from_strings(&mut surface, VS, None, None, FS)
     .expect("program creation")
     .ignore_warnings();
 
   let BuiltProgram {
-    program: copy_program,
+    program: mut copy_program,
     warnings,
-  } = Program::<_, (), (), ShaderInterface>::from_strings(COPY_VS, None, None, COPY_FS)
-    .expect("copy program creation");
+  } =
+    Program::<_, (), (), ShaderInterface>::from_strings(&mut surface, COPY_VS, None, None, COPY_FS)
+      .expect("copy program creation");
 
   for warning in &warnings {
     eprintln!("copy shader warning: {:?}", warning);
@@ -166,11 +167,13 @@ fn main() {
       &PipelineState::default(),
       |pipeline, mut shd_gate| {
         // we must bind the offscreen framebuffer color content so that we can pass it to a shader
-        let bound_texture = pipeline.bind_texture(offscreen_buffer.color_slot());
+        let bound_texture = pipeline
+          .bind_texture(offscreen_buffer.color_slot())
+          .unwrap();
 
-        shd_gate.shade(&mut copy_program, |iface, mut rdr_gate| {
+        shd_gate.shade(&mut copy_program, |mut iface, mut rdr_gate| {
           // we update the texture with the bound texture
-          iface.texture.update(&bound_texture);
+          iface.set(&iface.texture, bound_texture.binding());
 
           rdr_gate.render(&RenderState::default(), |mut tess_gate| {
             // this will render the attributeless quad with the offscreen framebuffer color slot

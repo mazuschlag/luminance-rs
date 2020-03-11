@@ -7,7 +7,7 @@ use crate::gl33::GL33;
 use luminance::backend::shader::{Shader, Uniformable};
 use luminance::linear::{M22, M33, M44};
 use luminance::pipeline::{BufferBinding, TextureBinding};
-use luminance::pixel::{Pixel, SamplerType as _, Type as PixelType};
+use luminance::pixel::{SamplerType, Type as PixelType};
 use luminance::shader::{
   ProgramError, StageError, StageType, TessellationStages, Uniform, UniformType, UniformWarning,
   VertexAttribWarning,
@@ -426,7 +426,7 @@ macro_rules! impl_Uniformable {
         UniformType::$uty
       }
 
-      unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+      unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
         gl::$f(uniform.index(), self.len() as GLsizei, self.as_ptr() as _);
       }
     }
@@ -438,7 +438,7 @@ macro_rules! impl_Uniformable {
         UniformType::$uty
       }
 
-      unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+      unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
         gl::$f(uniform.index(), self.len() as GLsizei, self.as_ptr());
       }
     }
@@ -450,7 +450,7 @@ macro_rules! impl_Uniformable {
         UniformType::$uty
       }
 
-      unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+      unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
         gl::$f(uniform.index(), 1, self.as_ptr());
       }
     }
@@ -462,7 +462,7 @@ macro_rules! impl_Uniformable {
         UniformType::$uty
       }
 
-      unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+      unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
         gl::$f(uniform.index(), self);
       }
     }
@@ -475,7 +475,7 @@ macro_rules! impl_Uniformable {
         UniformType::$uty
       }
 
-      unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+      unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
         gl::$f(
           uniform.index(),
           self.len() as GLsizei,
@@ -492,7 +492,7 @@ macro_rules! impl_Uniformable {
         UniformType::$uty
       }
 
-      unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+      unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
         gl::$f(uniform.index(), 1, gl::FALSE, self.as_ptr() as _);
       }
     }
@@ -540,7 +540,7 @@ unsafe impl Uniformable<GL33> for bool {
     UniformType::Bool
   }
 
-  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
     gl::Uniform1ui(uniform.index(), self as u32);
   }
 }
@@ -550,7 +550,7 @@ unsafe impl Uniformable<GL33> for [bool; 2] {
     UniformType::BVec2
   }
 
-  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
     let v = [self[0] as u32, self[1] as u32];
     gl::Uniform2uiv(uniform.index(), 1, v.as_ptr() as _);
   }
@@ -561,7 +561,7 @@ unsafe impl Uniformable<GL33> for [bool; 3] {
     UniformType::BVec3
   }
 
-  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
     let v = [self[0] as u32, self[1] as u32, self[2] as u32];
     gl::Uniform3uiv(uniform.index(), 1, v.as_ptr() as _);
   }
@@ -572,7 +572,7 @@ unsafe impl Uniformable<GL33> for [bool; 4] {
     UniformType::BVec4
   }
 
-  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
     let v = [
       self[0] as u32,
       self[1] as u32,
@@ -588,7 +588,7 @@ unsafe impl<'a> Uniformable<GL33> for &'a [bool] {
     UniformType::Bool
   }
 
-  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
     let v: Vec<_> = self.iter().map(|x| *x as u32).collect();
 
     gl::Uniform1uiv(uniform.index(), v.len() as GLsizei, v.as_ptr() as _);
@@ -600,7 +600,7 @@ unsafe impl<'a> Uniformable<GL33> for &'a [[bool; 2]] {
     UniformType::BVec2
   }
 
-  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
     let v: Vec<_> = self.iter().map(|x| [x[0] as u32, x[1] as u32]).collect();
 
     gl::Uniform2uiv(uniform.index(), v.len() as GLsizei, v.as_ptr() as _);
@@ -612,7 +612,7 @@ unsafe impl<'a> Uniformable<GL33> for &'a [[bool; 3]] {
     UniformType::BVec3
   }
 
-  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
     let v: Vec<_> = self
       .iter()
       .map(|x| [x[0] as u32, x[1] as u32, x[2] as u32])
@@ -627,7 +627,7 @@ unsafe impl<'a> Uniformable<GL33> for &'a [[bool; 4]] {
     UniformType::BVec4
   }
 
-  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
     let v: Vec<_> = self
       .iter()
       .map(|x| [x[0] as u32, x[1] as u32, x[2] as u32, x[3] as u32])
@@ -642,7 +642,7 @@ unsafe impl<T> Uniformable<GL33> for BufferBinding<T> {
     UniformType::BufferBinding
   }
 
-  unsafe fn update(self, program: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, program: &mut Program, uniform: &Uniform<Self>) {
     gl::UniformBlockBinding(
       program.handle,
       uniform.index() as GLuint,
@@ -651,13 +651,13 @@ unsafe impl<T> Uniformable<GL33> for BufferBinding<T> {
   }
 }
 
-unsafe impl<D, P> Uniformable<GL33> for TextureBinding<D, P>
+unsafe impl<D, S> Uniformable<GL33> for TextureBinding<D, S>
 where
   D: Dimensionable,
-  P: Pixel,
+  S: SamplerType,
 {
   unsafe fn ty() -> UniformType {
-    match (P::SamplerType::sample_type(), D::dim()) {
+    match (S::sample_type(), D::dim()) {
       (PixelType::NormIntegral, Dim::Dim1) => UniformType::Sampler1D,
       (PixelType::NormUnsigned, Dim::Dim1) => UniformType::Sampler1D,
       (PixelType::Integral, Dim::Dim1) => UniformType::ISampler1D,
@@ -696,7 +696,7 @@ where
     }
   }
 
-  unsafe fn update(self, _: &mut Program, uniform: &mut Uniform<Self>) {
+  unsafe fn update(self, _: &mut Program, uniform: &Uniform<Self>) {
     gl::Uniform1i(uniform.index(), self.binding() as GLint)
   }
 }

@@ -12,7 +12,7 @@ where
 {
   unsafe fn ty() -> UniformType;
 
-  unsafe fn update(self, program: &mut S::ProgramRepr, uniform: &mut Uniform<Self>);
+  unsafe fn update(self, program: &mut S::ProgramRepr, uniform: &Uniform<Self>);
 }
 
 pub unsafe trait Shader {
