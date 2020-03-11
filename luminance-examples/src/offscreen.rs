@@ -11,7 +11,7 @@ use crate::common::{Semantics, Vertex, VertexColor, VertexPosition};
 use glfw::{Action, Context as _, Key, WindowEvent};
 use luminance::context::GraphicsContext as _;
 use luminance::framebuffer::Framebuffer;
-use luminance::pipeline::{BoundTexture, PipelineState};
+use luminance::pipeline::{BoundTexture, PipelineState, TextureBinding};
 use luminance::pixel::{Floating, RGBA32F};
 use luminance::render_state::RenderState;
 use luminance::shader::{BuiltProgram, Program, Uniform};
@@ -52,11 +52,11 @@ const TRI_VERTICES: [Vertex; 3] = [
 struct ShaderInterface {
   // we only need the source texture (from the framebuffer) to fetch from
   #[uniform(unbound, name = "source_texture")]
-  texture: Uniform<BoundTexture<'static, Dim2, Floating>>,
+  texture: Uniform<TextureBinding<Dim2, Floating>>,
 }
 
 fn main() {
-  let mut surface = GlfwSurface::new(
+  let mut surface = GlfwSurface::new_gl33(
     WindowDim::Windowed {
       width: 960,
       height: 540,
@@ -97,10 +97,14 @@ fn main() {
   let mut back_buffer = surface.back_buffer().unwrap();
 
   // offscreen buffer that we will render in the first place
-  let size = surface.size();
-  let mut offscreen_buffer =
-    Framebuffer::<_, Dim2, RGBA32F, ()>::new(&mut surface, size, 0, Sampler::default())
-      .expect("framebuffer creation");
+  let (w, h) = surface.window.get_framebuffer_size();
+  let mut offscreen_buffer = Framebuffer::<_, Dim2, RGBA32F, ()>::new(
+    &mut surface,
+    [w as u32, h as u32],
+    0,
+    Sampler::default(),
+  )
+  .expect("framebuffer creation");
 
   // hack to update the offscreen buffer if needed; this is needed because we cannot update the
   // offscreen buffer from within the event loop
@@ -127,9 +131,10 @@ fn main() {
       back_buffer = surface.back_buffer().unwrap();
 
       // ditto for the offscreen framebuffer
-      let size = surface.size();
-      offscreen_buffer = Framebuffer::new(&mut surface, size, 0, Sampler::default())
-        .expect("framebuffer recreation");
+      let (w, h) = surface.window.get_framebuffer_size();
+      offscreen_buffer =
+        Framebuffer::new(&mut surface, [w as u32, h as u32], 0, Sampler::default())
+          .expect("framebuffer recreation");
 
       resize = false;
     }
@@ -142,7 +147,7 @@ fn main() {
       &offscreen_buffer,
       &PipelineState::default(),
       |_, mut shd_gate| {
-        shd_gate.shade(&program, |_, mut rdr_gate| {
+        shd_gate.shade(&mut program, |_, mut rdr_gate| {
           rdr_gate.render(&RenderState::default(), |mut tess_gate| {
             // we render the triangle here by asking for the whole triangle
             tess_gate.render(&triangle);
@@ -163,7 +168,7 @@ fn main() {
         // we must bind the offscreen framebuffer color content so that we can pass it to a shader
         let bound_texture = pipeline.bind_texture(offscreen_buffer.color_slot());
 
-        shd_gate.shade(&copy_program, |iface, mut rdr_gate| {
+        shd_gate.shade(&mut copy_program, |iface, mut rdr_gate| {
           // we update the texture with the bound texture
           iface.texture.update(&bound_texture);
 
@@ -179,7 +184,7 @@ fn main() {
     // finally, swap the backbuffer with the frontbuffer in order to render our triangles onto your
     // screen
     if render.is_ok() {
-      surface.swap_buffers();
+      surface.window.swap_buffers();
     } else {
       break 'app;
     }

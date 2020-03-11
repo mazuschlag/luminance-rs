@@ -159,6 +159,10 @@ unsafe impl<T> PipelineBuffer<T> for GL33 {
       state: pipeline.state.clone(),
     })
   }
+
+  unsafe fn buffer_binding(bound: &Self::BoundBufferRepr) -> u32 {
+    bound.binding
+  }
 }
 
 unsafe impl<D, P> PipelineTexture<D, P> for GL33
@@ -194,6 +198,10 @@ where
       state: pipeline.state.clone(),
       _phantom: PhantomData,
     })
+  }
+
+  unsafe fn texture_binding(bound: &Self::BoundTextureRepr) -> u32 {
+    bound.unit
   }
 }
 

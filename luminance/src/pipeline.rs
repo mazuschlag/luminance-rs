@@ -199,12 +199,47 @@ where
   }
 }
 
+pub struct BufferBinding<T> {
+  binding: u32,
+  _phantom: PhantomData<*const T>,
+}
+
+impl<T> BufferBinding<T> {
+  pub fn binding(self) -> u32 {
+    self.binding
+  }
+}
+
 pub struct BoundBuffer<'a, B, T>
 where
   B: PipelineBuffer<T>,
 {
   pub(crate) repr: B::BoundBufferRepr,
   _phantom: PhantomData<&'a T>,
+}
+
+impl<'a, B, T> BoundBuffer<'a, B, T>
+where
+  B: PipelineBuffer<T>,
+{
+  pub fn binding(&self) -> BufferBinding<T> {
+    let binding = unsafe { B::buffer_binding(&self.repr) };
+    BufferBinding {
+      binding,
+      _phantom: PhantomData,
+    }
+  }
+}
+
+pub struct TextureBinding<D, P> {
+  binding: u32,
+  _phantom: PhantomData<*const (D, P)>,
+}
+
+impl<D, P> TextureBinding<D, P> {
+  pub fn binding(self) -> u32 {
+    self.binding
+  }
 }
 
 pub struct BoundTexture<'a, B, D, P>
@@ -215,6 +250,21 @@ where
 {
   pub(crate) repr: B::BoundTextureRepr,
   _phantom: PhantomData<&'a ()>,
+}
+
+impl<'a, B, D, P> BoundTexture<'a, B, D, P>
+where
+  B: PipelineTexture<D, P>,
+  D: Dimensionable,
+  P: Pixel,
+{
+  pub fn binding(&self) -> TextureBinding<D, P> {
+    let binding = unsafe { B::texture_binding(&self.repr) };
+    TextureBinding {
+      binding,
+      _phantom: PhantomData,
+    }
+  }
 }
 
 impl<'a, B> Pipeline<'a, B>

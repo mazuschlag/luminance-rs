@@ -4,12 +4,8 @@ use std::fmt;
 use std::marker::PhantomData;
 use std::ops::Deref;
 
-use crate::backend::pipeline::{PipelineBuffer, PipelineTexture};
 use crate::backend::shader::{Shader, Uniformable};
 use crate::context::GraphicsContext;
-use crate::pipeline::{BoundBuffer, BoundTexture};
-use crate::pixel::Pixel;
-use crate::texture::Dimensionable;
 use crate::vertex::Semantics;
 
 /// A shader stage type.
@@ -210,20 +206,6 @@ where
 
   pub fn index(&self) -> i32 {
     self.index
-  }
-
-  /// Change the type of a uniform.
-  ///
-  /// Allow to change the type of a uniform to present it as if it was representing another type.
-  /// This is useful when using proxy types.
-  pub(crate) fn retype<Q>(&self) -> Uniform<Q>
-  where
-    Q: ?Sized,
-  {
-    Uniform {
-      index: self.index,
-      _t: PhantomData,
-    }
   }
 }
 
@@ -767,49 +749,5 @@ where
     Uni: UniformInterface<S, E>,
   {
     self.adapt_env(env)
-  }
-}
-
-// some “proxy” Uniformable impls for types coming from the current crate; those are needed so that
-// backend crates can implement Uniformable for their own types without having to need access to the
-// repr types
-
-pub struct BufferBinding<T>(PhantomData<*const T>);
-
-unsafe impl<'a, B, T> Uniformable<B> for &'a BoundBuffer<'_, B, T>
-where
-  B: PipelineBuffer<T>,
-  B::BoundBufferRepr: 'a,
-  &'a B::BoundBufferRepr: Uniformable<B>,
-{
-  type Proxy = BufferBinding<T>;
-
-  unsafe fn ty() -> UniformType {
-    <&'a B::BoundBufferRepr as Uniformable<B>>::ty()
-  }
-
-  unsafe fn update(self, program: &mut B::ProgramRepr, uniform: &mut Uniform<Self::Proxy>) {
-    <&'a B::BoundBufferRepr as Uniformable<B>>::update(&self.repr, program, &mut uniform.retype())
-  }
-}
-
-pub struct TextureBinding<D, P>(PhantomData<*const (D, P)>);
-
-unsafe impl<'a, B, D, P> Uniformable<B> for &'a BoundTexture<'_, B, D, P>
-where
-  B: PipelineTexture<D, P>,
-  B::BoundTextureRepr: 'a,
-  &'a B::BoundTextureRepr: Uniformable<B>,
-  D: Dimensionable,
-  P: Pixel,
-{
-  type Proxy = TextureBinding<D, P>;
-
-  unsafe fn ty() -> UniformType {
-    <&'a B::BoundTextureRepr as Uniformable<B>>::ty()
-  }
-
-  unsafe fn update(self, program: &mut B::ProgramRepr, uniform: &mut Uniform<Self::Proxy>) {
-    <&'a B::BoundTextureRepr as Uniformable<B>>::update(&self.repr, program, &mut uniform.retype())
   }
 }

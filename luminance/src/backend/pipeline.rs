@@ -30,6 +30,8 @@ pub unsafe trait PipelineBuffer<T>: PipelineBase + Buffer<T> {
     pipeline: &Self::PipelineRepr,
     buffer: &Self::BufferRepr,
   ) -> Result<Self::BoundBufferRepr, PipelineError>;
+
+  unsafe fn buffer_binding(bound: &Self::BoundBufferRepr) -> u32;
 }
 
 pub unsafe trait PipelineTexture<D, P>: PipelineBase + Texture<D, P>
@@ -46,4 +48,6 @@ where
   where
     D: Dimensionable,
     P: Pixel;
+
+  unsafe fn texture_binding(bound: &Self::BoundTextureRepr) -> u32;
 }
